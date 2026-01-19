@@ -13,7 +13,7 @@ This project implements a LINE OA-based order system using Google Apps Script (G
 
 ### Google Sheets Structure
 
-Create a Google Sheet with ID: `165ghFH-3gdM2sEqrygnFxYcPMfIX86uZ7zko0HwahgU`
+Create a Google Sheet with ID: `1W1-YHFHsc7tu3mwlsUNpKkp99JR5knYGh1pWej9rnB8`
 
 Sheets:
 - **Menu**: Item Name | Base CB | Category
@@ -26,7 +26,8 @@ Sheets:
    - Create a new GAS project.
    - Copy the code from `code.gs` into the script editor.
    - Set the script properties: Add `GEMINI_API_KEY` with your Gemini API key from Google AI Studio.
-   - Deploy as Web App: Publish > Deploy as web app, set to execute as 'Me', access 'Anyone'.
+   - Deploy as Web App: Publish > Deploy as web app, set to execute as 'Me', access 'Anyone, even anonymous' (สำคัญสำหรับ CORS จาก client).
+   - คัดลอก Web App URL (เช่น https://script.google.com/macros/s/SCRIPT_ID/exec) และแทนที่ 'YOUR_GAS_WEB_APP_URL' ใน liff/index.html และ liff/chef.html
 
 2. **Gemini API Key**:
    - Go to Google AI Studio (aistudio.google.com).
@@ -44,6 +45,7 @@ Sheets:
 
 ### API Endpoints
 
+- `GET /?action=getMenu`: Get menu items from Sheet.
 - `GET /?action=getOrders&lineId=<lineId>`: Get orders for Chef/Head Chef.
 - `GET /?action=getDashboard&lineId=<lineId>`: Get dashboard for Head Chef.
 - `POST /`: Handle placeOrder, updateOrder, assessCapacity.
