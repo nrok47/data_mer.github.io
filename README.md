@@ -29,7 +29,15 @@ Sheets:
    - Deploy as Web App: Publish > Deploy as web app, set to execute as 'Me', access 'Anyone, even anonymous' (สำคัญสำหรับ CORS จาก client).
    - คัดลอก Web App URL (เช่น https://script.google.com/macros/s/SCRIPT_ID/exec) และแทนที่ 'YOUR_GAS_WEB_APP_URL' ใน liff/index.html และ liff/chef.html
 
-2. **Gemini API Key**:
+2. **Google API Key for Sheets**:
+   - Go to [Google Cloud Console](https://console.cloud.google.com/).
+   - Create a new project or select existing.
+   - Enable **Google Sheets API**.
+   - Create an **API Key** in Credentials.
+   - Share your Google Sheet with "Anyone with the link" as Viewer.
+   - Replace `'YOUR_GOOGLE_API_KEY'` in `liff/index.html` with your API key.
+
+3. **Gemini API Key**:
    - Go to Google AI Studio (aistudio.google.com).
    - Create a new project or use existing.
    - Generate an API key for Gemini.
