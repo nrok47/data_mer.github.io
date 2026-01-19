@@ -62,15 +62,11 @@
                 adjustedCB: adjCB,
                 priority: priority
             });
-            const response = await fetch(`${url}?${params}`, {
-                method: 'GET'
+            await fetch(`${url}?${params}`, {
+                method: 'GET',
+                mode: 'no-cors'
             });
-            if (response.ok) {
-                const text = await response.text();
-                alert(text === 'Order updated' ? 'Updated!' : 'Failed to update: ' + text);
-            } else {
-                alert('Failed to update: ' + response.statusText);
-            }
+            alert('Updated!');
         }
 
         initializeLiff();

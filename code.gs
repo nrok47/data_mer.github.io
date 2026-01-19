@@ -9,28 +9,36 @@ function doGet(e) {
 
   if (action === 'getOrders') {
     if (role === 'Chef' || role === 'Head Chef') {
-      return ContentService
-        .createTextOutput(JSON.stringify(getOrders()))
-        .setMimeType(ContentService.MimeType.JSON);
+      return HtmlService.createHtmlOutput(JSON.stringify(getOrders()))
+        .setContentType('application/json')
+        .addMetaTag('Access-Control-Allow-Origin', '*')
+        .addMetaTag('Access-Control-Allow-Methods', 'GET')
+        .addMetaTag('Access-Control-Allow-Headers', 'Content-Type');
     }
   } else if (action === 'getMenu') {
-    return ContentService
-      .createTextOutput(JSON.stringify(getMenu()))
-      .setMimeType(ContentService.MimeType.JSON);
+    return HtmlService.createHtmlOutput(JSON.stringify(getMenu()))
+      .setContentType('application/json')
+      .addMetaTag('Access-Control-Allow-Origin', '*')
+      .addMetaTag('Access-Control-Allow-Methods', 'GET')
+      .addMetaTag('Access-Control-Allow-Headers', 'Content-Type');
   } else if (action === 'getDashboard') {
     if (role === 'Head Chef') {
-      return ContentService
-        .createTextOutput(JSON.stringify(getDashboard()))
-        .setMimeType(ContentService.MimeType.JSON);
+      return HtmlService.createHtmlOutput(JSON.stringify(getDashboard()))
+        .setContentType('application/json')
+        .addMetaTag('Access-Control-Allow-Origin', '*')
+        .addMetaTag('Access-Control-Allow-Methods', 'GET')
+        .addMetaTag('Access-Control-Allow-Headers', 'Content-Type');
     }
   } else if (action === 'placeOrder') {
     // Place order from customer
     var items = JSON.parse(e.parameter.items);
     var data = { lineId: e.parameter.lineId, items: items };
     placeOrder(data);
-    return ContentService
-      .createTextOutput('Order placed')
-      .setMimeType(ContentService.MimeType.TEXT);
+    return HtmlService.createHtmlOutput('Order placed')
+      .setContentType('text/plain')
+      .addMetaTag('Access-Control-Allow-Origin', '*')
+      .addMetaTag('Access-Control-Allow-Methods', 'GET')
+      .addMetaTag('Access-Control-Allow-Headers', 'Content-Type');
   } else if (action === 'updateOrder') {
     // Update order by Chef
     if (role === 'Chef' || role === 'Head Chef') {
@@ -40,20 +48,26 @@ function doGet(e) {
         priority: e.parameter.priority
       };
       updateOrder(data);
-      return ContentService
-        .createTextOutput('Order updated')
-        .setMimeType(ContentService.MimeType.TEXT);
+      return HtmlService.createHtmlOutput('Order updated')
+        .setContentType('text/plain')
+        .addMetaTag('Access-Control-Allow-Origin', '*')
+        .addMetaTag('Access-Control-Allow-Methods', 'GET')
+        .addMetaTag('Access-Control-Allow-Headers', 'Content-Type');
     }
   } else if (action === 'assessCapacity') {
     // Assess capacity using Gemini
     var assessment = assessCapacityWithGemini(parseInt(e.parameter.currentCB), parseInt(e.parameter.newCB));
-    return ContentService
-      .createTextOutput(JSON.stringify(assessment))
-      .setMimeType(ContentService.MimeType.JSON);
+    return HtmlService.createHtmlOutput(JSON.stringify(assessment))
+      .setContentType('application/json')
+      .addMetaTag('Access-Control-Allow-Origin', '*')
+      .addMetaTag('Access-Control-Allow-Methods', 'GET')
+      .addMetaTag('Access-Control-Allow-Headers', 'Content-Type');
   }
-  return ContentService
-    .createTextOutput('Unauthorized')
-    .setMimeType(ContentService.MimeType.TEXT);
+  return HtmlService.createHtmlOutput('Unauthorized')
+    .setContentType('text/plain')
+    .addMetaTag('Access-Control-Allow-Origin', '*')
+    .addMetaTag('Access-Control-Allow-Methods', 'GET')
+    .addMetaTag('Access-Control-Allow-Headers', 'Content-Type');
 }
 
 function doPost(e) {

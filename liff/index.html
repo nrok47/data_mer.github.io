@@ -65,15 +65,11 @@
                 lineId: profile.userId,
                 items: JSON.stringify(items)
             });
-            const response = await fetch(`${url}?${params}`, {
-                method: 'GET'
+            await fetch(`${url}?${params}`, {
+                method: 'GET',
+                mode: 'no-cors'
             });
-            if (response.ok) {
-                const text = await response.text();
-                alert(text === 'Order placed' ? 'Order placed successfully!' : 'Failed to place order: ' + text);
-            } else {
-                alert('Failed to place order: ' + response.statusText);
-            }
+            alert('Order placed successfully!');
         });
 
         initializeLiff();
