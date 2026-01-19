@@ -44,8 +44,11 @@
             const profile = await liff.getProfile();
             const items = [];
             document.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => {
-                const quantity = cb.parentElement.querySelector('input[data-quantity]').value;
-                items.push({ name: cb.dataset.name, quantity: parseInt(quantity) });
+                const quantityInput = cb.closest('div').querySelector('input[data-quantity]');
+                if (quantityInput) {
+                    const quantity = parseInt(quantityInput.value);
+                    items.push({ name: cb.dataset.name, quantity: quantity });
+                }
             });
             const data = {
                 action: 'placeOrder',
