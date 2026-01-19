@@ -59,7 +59,7 @@
                 items: items
             };
             // Post to GAS Web App URL
-            const response = await fetch('YOUR_GAS_WEB_APP_URL', {
+            const response = await fetch('https://script.google.com/macros/s/AKfycbxmlxCCpPQIym8txERqSDDZrHSkAdT0MsuZHMLgV_UUh2L7J9QkpACcYhxNXoZ38-Rp/exec', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
