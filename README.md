@@ -48,7 +48,9 @@ Sheets:
 - `GET /?action=getMenu`: Get menu items from Sheet.
 - `GET /?action=getOrders&lineId=<lineId>`: Get orders for Chef/Head Chef.
 - `GET /?action=getDashboard&lineId=<lineId>`: Get dashboard for Head Chef.
-- `POST /`: Handle placeOrder, updateOrder, assessCapacity.
+- `GET /?action=placeOrder&lineId=<lineId>&items=<json>`: Place order from customer.
+- `GET /?action=updateOrder&lineId=<lineId>&orderId=<id>&adjustedCB=<num>&priority=<str>`: Update order by Chef/Head Chef.
+- `GET /?action=assessCapacity&currentCB=<num>&newCB=<num>`: Assess capacity using Gemini.
 
 ### Notes
 
