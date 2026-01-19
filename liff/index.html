@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สั่งอาหาร - LINE OA</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+</head>
+<body>
+    <h1>สั่งอาหาร</h1>
+    <div id="menu">
+        <!-- Menu items will be loaded here -->
+    </div>
+    <button id="placeOrder">สั่งอาหาร</button>
+
+    <script>
+        async function initializeLiff() {
+            await liff.init({ liffId: '2008904245-nAKim9ql' }); // Replace with actual LIFF ID
+            if (!liff.isLoggedIn()) {
+                liff.login();
+            }
+        }
+
+        async function loadMenu() {
+            // Fetch menu from GAS or hardcode
+            const menu = [
+                { name: 'กะเพรา', cb: 40, category: 'อาหารไทย' },
+                { name: 'ผัดไทย', cb: 50, category: 'อาหารไทย' }
+            ];
+            const menuDiv = document.getElementById('menu');
+            menu.forEach(item => {
+                const div = document.createElement('div');
+                div.innerHTML = `
+                    <label>
+                        <input type="checkbox" data-name="${item.name}" data-cb="${item.cb}"> ${item.name} (${item.cb} CB)
+                    </label>
+                    <input type="number" min="1" value="1" data-quantity>
+                `;
+                menuDiv.appendChild(div);
+            });
+        }
+
+        document.getElementById('placeOrder').addEventListener('click', async () => {
+            const profile = await liff.getProfile();
+            const items = [];
+            document.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => {
+                const quantity = cb.parentElement.querySelector('input[data-quantity]').value;
+                items.push({ name: cb.dataset.name, quantity: parseInt(quantity) });
+            });
+            const data = {
+                action: 'placeOrder',
+                lineId: profile.userId,
+                items: items
+            };
+            // Post to GAS Web App URL
+            const response = await fetch('YOUR_GAS_WEB_APP_URL', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            alert('Order placed!');
+        });
+
+        initializeLiff();
+        loadMenu();
+    </script>
+</body>
+</html>

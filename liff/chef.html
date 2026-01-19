@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chef Dashboard - LINE OA</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+</head>
+<body>
+    <h1>Chef Dashboard</h1>
+    <div id="orders">
+        <!-- Orders will be loaded here -->
+    </div>
+
+    <script>
+        async function initializeLiff() {
+            await liff.init({ liffId: '2008904245-yxQX9WcW' }); // Replace with actual LIFF ID
+            if (!liff.isLoggedIn()) {
+                liff.login();
+            }
+        }
+
+        async function loadOrders() {
+            const profile = await liff.getProfile();
+            const response = await fetch(`YOUR_GAS_WEB_APP_URL?action=getOrders&lineId=${profile.userId}`);
+            const orders = await response.json();
+            const ordersDiv = document.getElementById('orders');
+            orders.slice(1).forEach(order => { // Skip header
+                const div = document.createElement('div');
+                div.innerHTML = `
+                    <p>Order ID: ${order[0]}</p>
+                    <p>Items: ${order[2]}</p>
+                    <p>Total CB: ${order[3]}</p>
+                    <input type="number" value="${order[4]}" id="adjCB-${order[0]}">
+                    <select id="priority-${order[0]}">
+                        <option value="Normal" ${order[6] === 'Normal' ? 'selected' : ''}>Normal</option>
+                        <option value="High" ${order[6] === 'High' ? 'selected' : ''}>High</option>
+                        <option value="Low" ${order[6] === 'Low' ? 'selected' : ''}>Low</option>
+                    </select>
+                    <button onclick="updateOrder('${order[0]}')">Update</button>
+                `;
+                ordersDiv.appendChild(div);
+            });
+        }
+
+        async function updateOrder(orderId) {
+            const profile = await liff.getProfile();
+            const adjCB = document.getElementById(`adjCB-${orderId}`).value;
+            const priority = document.getElementById(`priority-${orderId}`).value;
+            const data = {
+                action: 'updateOrder',
+                lineId: profile.userId,
+                orderId: orderId,
+                adjustedCB: parseInt(adjCB),
+                priority: priority
+            };
+            await fetch('YOUR_GAS_WEB_APP_URL', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            alert('Updated!');
+        }
+
+        initializeLiff();
+        loadOrders();
+    </script>
+</body>
+</html>
