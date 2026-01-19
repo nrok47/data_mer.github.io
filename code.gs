@@ -23,27 +23,22 @@ function doGet(e) {
         .createTextOutput(JSON.stringify(getDashboard()))
         .setMimeType(ContentService.MimeType.JSON);
     }
-  }
-  return ContentService
-    .createTextOutput('Unauthorized')
-    .setMimeType(ContentService.MimeType.TEXT);
-}
-
-function doPost(e) {
-  var data = JSON.parse(e.postData.contents);
-  var action = data.action;
-  var lineId = data.lineId;
-
-  if (action === 'placeOrder') {
+  } else if (action === 'placeOrder') {
     // Place order from customer
+    var items = JSON.parse(e.parameter.items);
+    var data = { lineId: e.parameter.lineId, items: items };
     placeOrder(data);
     return ContentService
       .createTextOutput('Order placed')
       .setMimeType(ContentService.MimeType.TEXT);
   } else if (action === 'updateOrder') {
     // Update order by Chef
-    var role = getUserRole(lineId);
     if (role === 'Chef' || role === 'Head Chef') {
+      var data = {
+        orderId: e.parameter.orderId,
+        adjustedCB: parseInt(e.parameter.adjustedCB),
+        priority: e.parameter.priority
+      };
       updateOrder(data);
       return ContentService
         .createTextOutput('Order updated')
@@ -51,13 +46,20 @@ function doPost(e) {
     }
   } else if (action === 'assessCapacity') {
     // Assess capacity using Gemini
-    var assessment = assessCapacityWithGemini(data.currentCB, data.newCB);
+    var assessment = assessCapacityWithGemini(parseInt(e.parameter.currentCB), parseInt(e.parameter.newCB));
     return ContentService
       .createTextOutput(JSON.stringify(assessment))
       .setMimeType(ContentService.MimeType.JSON);
   }
   return ContentService
-    .createTextOutput('Invalid action')
+    .createTextOutput('Unauthorized')
+    .setMimeType(ContentService.MimeType.TEXT);
+}
+
+function doPost(e) {
+  // Not used, moved to doGet to avoid CORS
+  return ContentService
+    .createTextOutput('Use GET requests')
     .setMimeType(ContentService.MimeType.TEXT);
 }
 

@@ -54,12 +54,23 @@
                 adjustedCB: parseInt(adjCB),
                 priority: priority
             };
-            await fetch('https://script.google.com/macros/s/AKfycbxmlxCCpPQIym8txERqSDDZrHSkAdT0MsuZHMLgV_UUh2L7J9QkpACcYhxNXoZ38-Rp/exec', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
+            const url = 'https://script.google.com/macros/s/AKfycbxmlxCCpPQIym8txERqSDDZrHSkAdT0MsuZHMLgV_UUh2L7J9QkpACcYhxNXoZ38-Rp/exec';
+            const params = new URLSearchParams({
+                action: 'updateOrder',
+                lineId: profile.userId,
+                orderId: orderId,
+                adjustedCB: adjCB,
+                priority: priority
             });
-            alert('Updated!');
+            const response = await fetch(`${url}?${params}`, {
+                method: 'GET'
+            });
+            if (response.ok) {
+                const text = await response.text();
+                alert(text === 'Order updated' ? 'Updated!' : 'Failed to update: ' + text);
+            } else {
+                alert('Failed to update: ' + response.statusText);
+            }
         }
 
         initializeLiff();
