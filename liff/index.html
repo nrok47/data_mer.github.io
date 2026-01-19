@@ -22,22 +22,25 @@
         }
 
         async function loadMenu() {
-            // Fetch menu from GAS or hardcode
-            const menu = [
-                { name: 'กะเพรา', cb: 40, category: 'อาหารไทย' },
-                { name: 'ผัดไทย', cb: 50, category: 'อาหารไทย' }
-            ];
-            const menuDiv = document.getElementById('menu');
-            menu.forEach(item => {
-                const div = document.createElement('div');
-                div.innerHTML = `
-                    <label>
-                        <input type="checkbox" data-name="${item.name}" data-cb="${item.cb}"> ${item.name} (${item.cb} CB)
-                    </label>
-                    <input type="number" min="1" value="1" data-quantity>
-                `;
-                menuDiv.appendChild(div);
-            });
+            // Fetch menu from GAS
+            try {
+                const response = await fetch('YOUR_GAS_WEB_APP_URL?action=getMenu');
+                const menu = await response.json();
+                const menuDiv = document.getElementById('menu');
+                menu.forEach(item => {
+                    const div = document.createElement('div');
+                    div.innerHTML = `
+                        <label>
+                            <input type="checkbox" data-name="${item.name}" data-cb="${item.cb}"> ${item.name} (${item.cb} CB)
+                        </label>
+                        <input type="number" min="1" value="1" data-quantity>
+                    `;
+                    menuDiv.appendChild(div);
+                });
+            } catch (error) {
+                console.error('Error loading menu:', error);
+                alert('Failed to load menu');
+            }
         }
 
         document.getElementById('placeOrder').addEventListener('click', async () => {
@@ -61,7 +64,11 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             });
-            alert('Order placed!');
+            if (response.ok) {
+                alert('Order placed successfully!');
+            } else {
+                alert('Failed to place order: ' + response.statusText);
+            }
         });
 
         initializeLiff();

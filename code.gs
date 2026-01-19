@@ -1,5 +1,5 @@
 // Google Apps Script for LINE OA Order System
-// Sheet ID: 165ghFH-3gdM2sEqrygnFxYcPMfIX86uZ7zko0HwahgU
+// Sheet ID: 1W1-YHFHsc7tu3mwlsUNpKkp99JR5knYGh1pWej9rnB8
 
 function doGet(e) {
   // Handle GET requests, e.g., for dashboard or fetching data
@@ -13,6 +13,10 @@ function doGet(e) {
         .createTextOutput(JSON.stringify(getOrders()))
         .setMimeType(ContentService.MimeType.JSON);
     }
+  } else if (action === 'getMenu') {
+    return ContentService
+      .createTextOutput(JSON.stringify(getMenu()))
+      .setMimeType(ContentService.MimeType.JSON);
   } else if (action === 'getDashboard') {
     if (role === 'Head Chef') {
       return ContentService
@@ -58,7 +62,7 @@ function doPost(e) {
 }
 
 function getUserRole(lineId) {
-  var sheet = SpreadsheetApp.openById('165ghFH-3gdM2sEqrygnFxYcPMfIX86uZ7zko0HwahgU').getSheetByName('Users');
+  var sheet = SpreadsheetApp.openById('1W1-YHFHsc7tu3mwlsUNpKkp99JR5knYGh1pWej9rnB8').getSheetByName('Users');
   var data = sheet.getDataRange().getValues();
   for (var i = 1; i < data.length; i++) {
     if (data[i][0] == lineId) {
@@ -69,14 +73,14 @@ function getUserRole(lineId) {
 }
 
 function placeOrder(data) {
-  var sheet = SpreadsheetApp.openById('165ghFH-3gdM2sEqrygnFxYcPMfIX86uZ7zko0HwahgU').getSheetByName('Orders');
+  var sheet = SpreadsheetApp.openById('1W1-YHFHsc7tu3mwlsUNpKkp99JR5knYGh1pWej9rnB8').getSheetByName('Orders');
   var orderId = generateOrderId();
   var totalCB = calculateTotalCB(data.items);
   sheet.appendRow([orderId, data.lineId, JSON.stringify(data.items), totalCB, totalCB, 'Pending', 'Normal']);
 }
 
 function updateOrder(data) {
-  var sheet = SpreadsheetApp.openById('165ghFH-3gdM2sEqrygnFxYcPMfIX86uZ7zko0HwahgU').getSheetByName('Orders');
+  var sheet = SpreadsheetApp.openById('1W1-YHFHsc7tu3mwlsUNpKkp99JR5knYGh1pWej9rnB8').getSheetByName('Orders');
   var dataRange = sheet.getDataRange().getValues();
   for (var i = 1; i < dataRange.length; i++) {
     if (dataRange[i][0] == data.orderId) {
@@ -88,12 +92,12 @@ function updateOrder(data) {
 }
 
 function getOrders() {
-  var sheet = SpreadsheetApp.openById('165ghFH-3gdM2sEqrygnFxYcPMfIX86uZ7zko0HwahgU').getSheetByName('Orders');
+  var sheet = SpreadsheetApp.openById('1W1-YHFHsc7tu3mwlsUNpKkp99JR5knYGh1pWej9rnB8').getSheetByName('Orders');
   return sheet.getDataRange().getValues();
 }
 
 function getDashboard() {
-  var sheet = SpreadsheetApp.openById('165ghFH-3gdM2sEqrygnFxYcPMfIX86uZ7zko0HwahgU').getSheetByName('Orders');
+  var sheet = SpreadsheetApp.openById('1W1-YHFHsc7tu3mwlsUNpKkp99JR5knYGh1pWej9rnB8').getSheetByName('Orders');
   var data = sheet.getDataRange().getValues();
   var totalCB = 0;
   for (var i = 1; i < data.length; i++) {
@@ -103,7 +107,7 @@ function getDashboard() {
 }
 
 function calculateTotalCB(items) {
-  var menuSheet = SpreadsheetApp.openById('165ghFH-3gdM2sEqrygnFxYcPMfIX86uZ7zko0HwahgU').getSheetByName('Menu');
+  var menuSheet = SpreadsheetApp.openById('1W1-YHFHsc7tu3mwlsUNpKkp99JR5knYGh1pWej9rnB8').getSheetByName('Menu');
   var menuData = menuSheet.getDataRange().getValues();
   var total = 0;
   for (var item of items) {
@@ -117,8 +121,14 @@ function calculateTotalCB(items) {
   return total;
 }
 
-function generateOrderId() {
-  return 'ORD-' + new Date().getTime();
+function getMenu() {
+  var sheet = SpreadsheetApp.openById('1W1-YHFHsc7tu3mwlsUNpKkp99JR5knYGh1pWej9rnB8').getSheetByName('Menu');
+  var data = sheet.getDataRange().getValues();
+  var menu = [];
+  for (var i = 1; i < data.length; i++) {
+    menu.push({ name: data[i][0], cb: data[i][1], category: data[i][2] });
+  }
+  return menu;
 }
 
 function assessCapacityWithGemini(currentCB, newCB) {
