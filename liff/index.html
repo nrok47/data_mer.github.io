@@ -24,7 +24,7 @@
         async function loadMenu() {
             // Fetch menu from GAS
             try {
-                const response = await fetch('YOUR_GAS_WEB_APP_URL?action=getMenu');
+                const response = await fetch('https://script.google.com/macros/s/AKfycbxmlxCCpPQIym8txERqSDDZrHSkAdT0MsuZHMLgV_UUh2L7J9QkpACcYhxNXoZ38-Rp/exec?action=getMenu');
                 const menu = await response.json();
                 const menuDiv = document.getElementById('menu');
                 menu.forEach(item => {
