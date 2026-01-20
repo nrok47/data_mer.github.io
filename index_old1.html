@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chayagorn Kitchen | ระบบจัดการครัว</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Kanit', sans-serif; }
+    .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+    .order-card { transition: all 0.3s ease; }
+    .order-card:hover { transform: translateY(-2px); shadow: 0 4px 12px rgba(0,0,0,0.05); }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+  <div id="loading" class="fixed inset-0 z-50 flex items-center justify-center bg-white">
+    <div class="text-center">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+      <p class="mt-4 text-slate-500 italic">กำลังเตรียมครัว...</p>
+    </div>
+  </div>
+
+  <div id="login-page" class="hidden flex flex-col items-center justify-center min-h-screen p-6">
+    <div class="text-6xl mb-6">👨‍🍳</div>
+    <h1 class="text-3xl font-bold text-slate-800 mb-2 text-center">Chayagorn Kitchen</h1>
+    <p class="text-slate-500 mb-8 text-center text-sm">เข้าสู่ระบบเพื่อสั่งเมนูงานและสะสมแต้ม BP</p>
+    <button onclick="liff.login()" class="w-full max-w-xs bg-[#06C755] text-white py-4 rounded-2xl font-bold shadow-lg hover:bg-[#05b34c] transition-all scale-100 active:scale-95">
+      LOG IN WITH LINE
+    </button>
+  </div>
+
+  <div id="app" class="hidden pb-10">
+    
+    <div class="bg-blue-600 text-white p-6 pb-20 rounded-b-[2.5rem] shadow-xl">
+      <div class="flex justify-between items-center max-w-md mx-auto">
+        <div class="flex items-center space-x-3">
+          <img id="user-img" class="h-14 w-14 rounded-full border-2 border-white/40 shadow-inner">
+          <div>
+            <p class="text-blue-100 text-xs opacity-80">ยินดีต้อนรับ</p>
+            <h2 id="user-name" class="text-lg font-semibold leading-tight">-</h2>
+            <span id="role-badge" class="inline-block bg-white/20 text-[10px] px-2 py-0.5 rounded-md mt-1 italic">Guest</span>
+          </div>
+        </div>
+        <div class="text-right">
+          <button onclick="liff.logout(); location.reload();" class="text-white/60 text-xs border border-white/20 px-2 py-1 rounded">Logout</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="max-w-md mx-auto -mt-12 px-4 space-y-5">
+      
+      <div class="grid grid-cols-2 gap-3">
+        <div class="glass p-4 rounded-3xl shadow-sm text-center border border-white">
+          <p class="text-slate-400 text-[10px] uppercase font-bold tracking-widest mb-1">สะสมความเทพ (CB)</p>
+          <p id="stat-cb" class="text-2xl font-bold text-blue-600">0</p>
+        </div>
+        <div class="glass p-4 rounded-3xl shadow-sm text-center border border-white border-b-4 border-b-green-400">
+          <p class="text-slate-400 text-[10px] uppercase font-bold tracking-widest mb-1">แต้มจิตพิสัย (BP)</p>
+          <p id="stat-bp" class="text-2xl font-bold text-green-600">0</p>
+        </div>
+      </div>
+
+      <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+        <h3 class="font-bold text-slate-800 mb-4 flex items-center">
+          <span class="mr-2">📝</span> สั่งเมนูงานใหม่
+        </h3>
+        <form id="order-form" class="space-y-4">
+          <input type="text" id="title" placeholder="ระบุชื่อรายการงาน..." class="w-full bg-slate-50 border-none rounded-xl p-3.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm" required>
+          <textarea id="detail" rows="2" placeholder="รายละเอียดเพิ่มเติม..." class="w-full bg-slate-50 border-none rounded-xl p-3.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm"></textarea>
+          
+          <div class="grid grid-cols-2 gap-3">
+            <select id="type" class="bg-slate-50 border-none rounded-xl p-3.5 outline-none text-sm font-medium text-slate-600">
+              <option value="ออกแบบระบบฯ">ออกแบบระบบฯ</option>
+              <option value="ปรึกษาเทคนิค">ปรึกษาเทคนิค</option>
+              <option value="ลงพื้นที่">ลงพื้นที่</option>
+              <option value="ส่งของ">ส่งของ</option>
+            </select>
+            <select id="priority" class="bg-slate-50 border-none rounded-xl p-3.5 outline-none text-sm font-medium text-slate-600">
+              <option value="A">ความเร็วกบ (A)</option>
+              <option value="B" selected>ความเร็วลูกอ๊อด (B)</option>
+              <option value="C">ความเร็วหอยทาก (C)</option>
+            </select>
+          </div>
+
+          <button type="submit" id="btn-submit" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 active:scale-[0.98] transition-all">
+            ส่งรายการให้เชฟ
+          </button>
+        </form>
+      </div>
+
+      <div>
+        <div class="flex justify-between items-center mb-4 px-1">
+          <h3 class="font-bold text-slate-800">รายการงานในครัว</h3>
+          <button onclick="fetchData()" class="text-blue-600 text-xs font-semibold hover:underline">รีเฟรชข้อมูล</button>
+        </div>
+        <div id="data-list" class="space-y-3">
+          </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // --- ตั้งค่าเริ่มต้น (ข้อมูลที่คุณชยกรให้จำไว้) ---
+    const LIFF_ID = '2008904245-TsV7LL73';
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbxelWNQWMsswiUwtqRqlFAUvlFUejdStFCMSwC2FpysqVJ7j0YfXYMnYpsr-AEGFtnULQ/exec';
+
+    let userRole = 'User'; // ค่าเริ่มต้น
+
+    // 1. เริ่มต้น LIFF
+    async function initLiff() {
+      try {
+        await liff.init({ liffId: LIFF_ID });
+        if (liff.isLoggedIn()) {
+          runApp();
+        } else {
+          document.getElementById('loading').style.display = 'none';
+          document.getElementById('login-page').style.display = 'flex';
+        }
+      } catch (err) {
+        console.error("LIFF Init Error:", err);
+        alert("LIFF Error: " + err.message);
+      }
+    }
+
+    // 2. เมื่อ Login แล้ว ทำงานหลัก
+    // แก้ไขฟังก์ชัน runApp ใน index.html
+async function runApp() {
+  const profile = await liff.getProfile();
+  document.getElementById('user-name').innerText = profile.displayName;
+  document.getElementById('user-img').src = profile.pictureUrl;
+
+  try {
+    // ส่งชื่อและรูปไปด้วย เพื่อให้ GAS บันทึกลง Members ได้ถูกต้องในครั้งแรก
+    const res = await fetch(`${GAS_URL}?action=getStats&lineId=${profile.userId}&name=${encodeURIComponent(profile.displayName)}&pictureUrl=${encodeURIComponent(profile.pictureUrl)}`);
+    const stats = await res.json();
+    
+    userRole = stats.role || 'User';
+    document.getElementById('role-badge').innerText = userRole;
+    document.getElementById('stat-cb').innerText = (stats.accCb || 0) + " CB";
+    document.getElementById('stat-bp').innerText = (stats.currentBp || 0) + " BP";
+    
+    // ปรับสี Badge ตาม Role
+    if(userRole === 'Chef' || userRole === 'Head Chef') {
+       document.getElementById('role-badge').className = "inline-block bg-orange-500 text-white text-[10px] px-2 py-0.5 rounded-md mt-1 font-bold";
+    }
+  } catch (e) {
+    console.log("Stats error:", e);
+  }
+
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  fetchData();
+}
+
+    // 3. ดึงรายการงานทั้งหมด
+    async function fetchData() {
+      try {
+        const res = await fetch(GAS_URL);
+        const data = await res.json();
+        renderOrders(data.slice(1)); // ตัด Header ออก
+      } catch (err) {
+        console.error("Fetch Data Error:", err);
+      }
+    }
+
+    // 4. แสดงผลรายการงาน
+    function renderOrders(rows) {
+      const listContainer = document.getElementById('data-list');
+      if (rows.length === 0) {
+        listContainer.innerHTML = '<div class="text-center py-10 text-slate-400 text-sm italic">ไม่มีรายการงานค้างในครัว</div>';
+        return;
+      }
+
+      listContainer.innerHTML = rows.reverse().map(row => {
+        const isDone = row[8] === 'Done';
+        const priorityLabel = row[9] || 'B';
+        
+        // ส่วนควบคุมสำหรับเชฟ (CRUD)
+        const chefTools = (userRole === 'Chef' && !isDone) ? `
+          <div class="mt-4 pt-3 border-t border-slate-50 flex gap-2">
+            <button onclick="finishOrder('${row[0]}')" class="flex-1 bg-green-500 text-white text-[11px] py-2 rounded-lg font-bold shadow-sm shadow-green-100">จบงาน/ให้ BP</button>
+            <button onclick="deleteOrder('${row[0]}')" class="bg-slate-100 text-slate-400 text-[11px] px-3 py-2 rounded-lg font-bold">ลบ</button>
+          </div>
+        ` : '';
+
+        return `
+          <div class="order-card bg-white p-5 rounded-3xl shadow-sm border border-slate-100 relative overflow-hidden">
+            <div class="flex justify-between items-start mb-2">
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${isDone ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}">
+                ${isDone ? 'สำเร็จ' : 'กำลังดำเนินการ'}
+              </span>
+              <span class="text-[10px] font-bold text-blue-400 bg-blue-50 px-2 py-0.5 rounded-full">Prio: ${priorityLabel}</span>
+            </div>
+            <h4 class="font-bold text-slate-800 text-base leading-tight">${row[4]}</h4>
+            <p class="text-slate-500 text-xs mt-1 leading-relaxed">${row[5] || '-'}</p>
+            <div class="flex justify-between items-center mt-3 text-[10px] text-slate-300">
+              <span>ผู้สั่ง: ${row[3]}</span>
+              <span>ID: ${row[0].substring(row[0].length - 5)}</span>
+            </div>
+            ${chefTools}
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 5. บันทึกข้อมูลงาน (Submit Order)
+    document.getElementById('order-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btn-submit');
+      btn.disabled = true;
+      btn.innerHTML = 'กำลังส่งข้อมูล...';
+
+      const profile = await liff.getProfile();
+      const payload = {
+        action: 'submitOrder',
+        lineId: profile.userId,
+        name: profile.displayName,
+        title: document.getElementById('title').value,
+        detail: document.getElementById('detail').value,
+        type: document.getElementById('type').value,
+        priority: document.getElementById('priority').value
+      };
+
+      try {
+        await fetch(GAS_URL, {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        alert("ส่งรายการงานเข้าครัวสำเร็จ!");
+        document.getElementById('order-form').reset();
+        fetchData(); // โหลดข้อมูลใหม่
+      } catch (err) {
+        alert("เกิดข้อผิดพลาด: " + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'ส่งรายการให้เชฟ';
+      }
+    };
+
+    // 6. ฟังก์ชันจัดการของเชฟ (Finish Order)
+    async function finishOrder(orderId) {
+      const bp = prompt("ยินดีด้วยเชฟ! งานเสร็จแล้ว ให้แต้ม BP ลูกค้าเท่าไหร่ดี? (0-10)", "5");
+      if (bp === null || bp === "") return;
+
+      const btn = event.target;
+      btn.innerText = "กำลังประมวลผล...";
+      
+      try {
+        await fetch(GAS_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action: 'finishOrder', id: orderId, bp: bp })
+        });
+        alert("จบงานและสะสมแต้มให้สมาชิกเรียบร้อย!");
+        location.reload(); // รีโหลดเพื่ออัปเดตสถิติ
+      } catch (err) {
+        alert("Error: " + err.message);
+      }
+    }
+
+    // 7. ฟังก์ชันลบงาน
+    async function deleteOrder(orderId) {
+      if(!confirm("ยืนยันจะลบเมนูงานนี้ออกจากคิว?")) return;
+      try {
+        await fetch(GAS_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action: 'deleteOrder', id: orderId })
+        });
+        fetchData();
+      } catch (err) {
+        alert("Error: " + err.message);
+      }
+    }
+
+    // รัน LIFF
+    initLiff();
+  </script>
+</body>
+</html>
