@@ -3,88 +3,97 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chayagorn Kitchen | Admin Dashboard</title>
+  <title>Chayagorn Kitchen | Full System</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
   <style>
-    body { font-family: 'Kanit', sans-serif; }
+    body { font-family: 'Kanit', sans-serif; background-color: #f9fafb; }
     .active-tab { border-bottom: 4px solid #f59e0b; color: #f59e0b; font-weight: bold; }
     .stat-card { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
     .chart-bar { transition: width 1s ease-in-out; }
+    button:active { transform: scale(0.98); }
   </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="min-h-screen">
 
   <div id="app" class="max-w-2xl mx-auto pb-24">
     <header class="bg-gradient-to-r from-yellow-500 to-orange-600 p-6 text-white text-center shadow-lg rounded-b-3xl mb-4">
-      <h1 class="text-3xl font-bold uppercase">Chayagorn Kitchen</h1>
+      <h1 class="text-3xl font-bold uppercase tracking-tight">Chayagorn Kitchen</h1>
       <p class="text-sm opacity-90">ระบบบริหาร Bandwidth & จิตพิสัย</p>
     </header>
 
     <nav class="bg-white shadow-md sticky top-0 z-10 flex justify-around p-2 mb-4 rounded-xl mx-4">
-      <button onclick="showTab('customer')" id="tab-customer" class="flex-1 py-2 active-tab">ลูกค้า</button>
-      <button onclick="showTab('chef')" id="tab-chef" class="flex-1 py-2">งานเชฟ</button>
-      <button onclick="showTab('admin')" id="tab-admin" class="flex-1 py-2">จัดการ</button>
+      <button onclick="showTab('customer')" id="tab-customer" class="flex-1 py-2 active-tab text-sm">ลูกค้า</button>
+      <button onclick="showTab('chef')" id="tab-chef" class="flex-1 py-2 text-sm">งานเชฟ</button>
+      <button onclick="showTab('admin')" id="tab-admin" class="flex-1 py-2 text-sm">จัดการ</button>
     </nav>
 
     <div id="page-customer" class="p-4 space-y-6">
       <div class="stat-card p-5 rounded-2xl shadow-lg text-white">
         <div class="flex items-center gap-3 mb-4">
-          <img id="user-pic" class="w-12 h-12 rounded-full border-2 border-white/20">
+          <img id="user-pic" class="w-12 h-12 rounded-full border-2 border-white/20" src="">
           <div>
             <h3 class="text-xl font-bold" id="display-name">Loading...</h3>
-            <span id="display-role" class="text-[10px] bg-white/20 px-2 py-0.5 rounded-full">ROLE</span>
+            <span id="display-role" class="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-bold uppercase">ROLE</span>
           </div>
         </div>
         <div class="grid grid-cols-2 gap-4 text-center">
-          <div class="bg-black/10 p-3 rounded-xl"><p class="text-[10px]">BP คงเหลือ</p><h4 class="text-2xl font-black" id="display-bp">0</h4></div>
-          <div class="bg-black/10 p-3 rounded-xl"><p class="text-[10px]">ACC. CB</p><h4 class="text-2xl font-black" id="display-cb">0</h4></div>
+          <div class="bg-black/10 p-3 rounded-xl">
+            <p class="text-[10px] opacity-70 uppercase font-bold">BP คงเหลือ</p>
+            <h4 class="text-2xl font-black" id="display-bp">0</h4>
+          </div>
+          <div class="bg-black/10 p-3 rounded-xl">
+            <p class="text-[10px] opacity-70 uppercase font-bold">ACC. CB (Experience)</p>
+            <h4 class="text-2xl font-black" id="display-cb">0</h4>
+          </div>
         </div>
       </div>
 
       <div class="bg-white p-6 rounded-2xl shadow-xl border border-gray-100">
-        <h2 class="text-xl font-bold mb-4">📋 สั่งเมนูงาน</h2>
-        <div class="space-y-3">
-          <input id="jobTitle" type="text" placeholder="ชื่อโครงการ" class="w-full p-4 bg-gray-50 rounded-xl outline-none">
-          <textarea id="jobDetail" placeholder="บรีฟงาน..." class="w-full p-4 bg-gray-50 rounded-xl h-20"></textarea>
-          <select id="jobType" class="w-full p-4 bg-gray-50 rounded-xl" onchange="updateEstCB()"></select>
-          <div class="bg-yellow-50 p-4 rounded-xl flex justify-between">
-            <span>Estimated:</span><span class="font-bold"><span id="estCBDisplay">0</span> CB</span>
+        <h2 class="text-xl font-bold mb-6 flex items-center gap-2">📋 สั่งเมนูงานใหม่</h2>
+        <div class="space-y-4">
+          <input id="jobTitle" type="text" placeholder="ชื่อโครงการ/ชิ้นงาน" class="w-full p-4 bg-gray-50 rounded-xl outline-none border focus:border-yellow-500">
+          <textarea id="jobDetail" placeholder="บรีฟงานเบื้องต้น..." class="w-full p-4 bg-gray-50 rounded-xl h-24 outline-none border focus:border-yellow-500"></textarea>
+          <select id="jobType" class="w-full p-4 bg-gray-50 rounded-xl border" onchange="updateEstCB()"></select>
+          <div class="bg-yellow-50 p-4 rounded-xl flex justify-between items-center border border-yellow-100">
+             <span class="text-yellow-800 font-bold">น้ำหนักงานโดยประมาณ:</span>
+             <span class="text-2xl font-black text-yellow-600"><span id="estCBDisplay">0</span> <small class="text-xs">CB</small></span>
           </div>
-          <button onclick="submitOrder()" class="w-full bg-yellow-500 text-white p-4 rounded-xl font-bold">ส่งออเดอร์</button>
+          <button onclick="submitOrder()" class="w-full bg-yellow-500 text-white p-4 rounded-xl font-bold text-lg shadow-lg hover:bg-yellow-600 transition-colors">ส่งออเดอร์เข้าครัว</button>
         </div>
       </div>
     </div>
 
     <div id="page-chef" class="p-4 hidden">
-      <div id="order-list" class="space-y-4"></div>
+      <div id="order-list" class="space-y-4">
+        <p class="text-center py-10 text-gray-400 italic">กำลังเช็คคิวงาน...</p>
+      </div>
     </div>
 
     <div id="page-admin" class="p-4 hidden space-y-6">
         <div id="dashboard-section" class="bg-white p-6 rounded-3xl shadow-md border border-gray-100">
-            <h3 class="text-lg font-bold text-gray-800 mb-4">📊 Head Chef Dashboard</h3>
+            <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">📊 Head Chef Dashboard</h3>
             <div class="grid grid-cols-2 gap-4 mb-6">
-                <div class="p-4 bg-blue-50 rounded-2xl">
-                    <p class="text-[10px] text-blue-400 uppercase font-bold">Job ต่อ 100 CB</p>
+                <div class="p-4 bg-blue-50 rounded-2xl border border-blue-100">
+                    <p class="text-[10px] text-blue-400 uppercase font-bold">Efficiency (Job per 100 CB)</p>
                     <h4 id="ratio-job-cb" class="text-2xl font-black text-blue-600">0</h4>
                 </div>
-                <div class="p-4 bg-green-50 rounded-2xl">
+                <div class="p-4 bg-green-50 rounded-2xl border border-green-100">
                     <p class="text-[10px] text-green-400 uppercase font-bold">Total Finished CB</p>
                     <h4 id="total-finished-cb" class="text-2xl font-black text-green-600">0</h4>
                 </div>
             </div>
             
-            <h4 class="font-bold text-sm text-gray-500 mb-2 uppercase">User Experience Ranking (CB)</h4>
-            <div id="user-experience-list" class="space-y-3">
-                </div>
+            <h4 class="font-bold text-xs text-gray-400 mb-3 uppercase tracking-wider">User Experience Ranking</h4>
+            <div id="user-experience-list" class="space-y-4"></div>
         </div>
 
         <div class="bg-white p-5 rounded-2xl shadow-md border-t-4 border-yellow-500">
           <div class="flex justify-between items-center mb-4">
-            <h3 class="font-bold">⚙️ ประเภทงาน (Config)</h3>
-            <button onclick="addConfig()" class="bg-yellow-500 text-white px-4 py-1 rounded-full text-xs font-bold">+ เพิ่ม</button>
+            <h3 class="font-bold text-gray-700">⚙️ ตั้งค่าประเภทงาน (Config)</h3>
+            <button onclick="addConfig()" class="bg-yellow-500 text-white px-4 py-1 rounded-full text-xs font-bold shadow-md hover:bg-yellow-600">+ เพิ่ม</button>
           </div>
           <div id="config-list" class="space-y-2"></div>
         </div>
@@ -92,19 +101,25 @@
   </div>
 
   <script>
-    const LIFF_ID = '2008904245-TsV7LL73';
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbxelWNQWMsswiUwtqRqlFAUvlFUejdStFCMSwC2FpysqVJ7j0YfXYMnYpsr-AEGFtnULQ/exec';
+    const LIFF_ID = 'YOUR_LIFF_ID'; // <--- เปลี่ยนเป็น LIFF ID ของคุณ
+    const GAS_URL = 'YOUR_GAS_WEBAPP_URL'; // <--- เปลี่ยนเป็น Web App URL ของคุณ
+    
     let currentUser = {};
 
     async function init() {
-      await liff.init({ liffId: LIFF_ID });
-      if (!liff.isLoggedIn()) { liff.login(); return; }
-      const profile = await liff.getProfile();
-      currentUser = profile;
-      document.getElementById('user-pic').src = profile.pictureUrl;
-      await loadUserStats();
-      loadConfig();
-      fetchOrders();
+      try {
+        await liff.init({ liffId: LIFF_ID });
+        if (!liff.isLoggedIn()) { liff.login(); return; }
+        const profile = await liff.getProfile();
+        currentUser = profile;
+        document.getElementById('user-pic').src = profile.pictureUrl;
+        
+        await loadUserStats();
+        loadConfig();
+        fetchOrders();
+      } catch (err) {
+        console.error("LIFF Init Error:", err);
+      }
     }
 
     async function loadUserStats() {
@@ -115,29 +130,34 @@
       document.getElementById('display-cb').innerText = s.accCb;
       document.getElementById('display-role').innerText = s.role;
       currentUser.role = s.role;
-      if (s.role === 'Head Chef') loadDashboard();
+      
+      // แสดง Dashboard เฉพาะ Head Chef
+      if (s.role === 'Head Chef') {
+        document.getElementById('dashboard-section').classList.remove('hidden');
+        loadDashboard();
+      } else {
+        document.getElementById('dashboard-section').classList.add('hidden');
+      }
     }
 
     async function loadDashboard() {
         const res = await fetch(`${GAS_URL}?action=getDashboard`);
         const data = await res.json();
-        
-        // คำนวณ Ratio Job ต่อ CB (เฉลี่ยงงานต่อ 100 CB)
-        const ratio = data.totalCb > 0 ? ((data.doneJobs / data.totalCb) * 100).toFixed(2) : 0;
+        const ratio = data.totalCb > 0 ? ((data.doneJobs / data.totalCb) * 100).toFixed(1) : 0;
         document.getElementById('ratio-job-cb').innerText = ratio;
         document.getElementById('total-finished-cb').innerText = data.totalCb;
 
-        // Render User Ranking (Experience)
         const sortedUsers = data.userExp.sort((a, b) => b.cb - a.cb);
-        const maxCb = sortedUsers[0]?.cb || 1;
+        const maxCb = Math.max(...sortedUsers.map(u => u.cb), 1);
+        
         document.getElementById('user-experience-list').innerHTML = sortedUsers.map(u => `
             <div>
                 <div class="flex justify-between text-[11px] mb-1">
-                    <span class="font-bold text-gray-700">${u.name} (${u.role})</span>
-                    <span class="text-gray-400">${u.cb} CB / ${u.bp} BP</span>
+                    <span class="font-bold text-gray-700">${u.name} <span class="text-gray-300 font-normal">| ${u.role}</span></span>
+                    <span class="text-orange-500 font-bold">${u.cb} CB / ${u.bp} BP</span>
                 </div>
                 <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                    <div class="chart-bar bg-orange-400 h-full" style="width: ${(u.cb / maxCb * 100)}%"></div>
+                    <div class="chart-bar bg-gradient-to-r from-orange-400 to-yellow-400 h-full" style="width: ${(u.cb / maxCb * 100)}%"></div>
                 </div>
             </div>
         `).join('');
@@ -151,32 +171,150 @@
 
     function renderOrders(rows) {
       const list = document.getElementById('order-list');
-      list.innerHTML = rows.reverse().map(o => `
-        <div class="bg-white p-5 rounded-2xl shadow-md border-l-8 ${o[8]==='Done'?'border-green-500':'border-yellow-500'} mb-4">
-          <div class="flex justify-between">
-            <div><h4 class="font-bold text-lg">${o[4]}</h4><p class="text-xs text-gray-500">${o[3]} • ${o[6]}</p></div>
-            <div class="text-right"><span class="block font-black text-xl">${o[7]}</span><span class="text-[8px] text-gray-400 italic">CB</span></div>
+      if (rows.length === 0) { list.innerHTML = `<div class="bg-white p-10 rounded-2xl text-center text-gray-400">ไม่มีงานในคิว</div>`; return; }
+      
+      list.innerHTML = rows.reverse().map(o => {
+        const statusColor = { 'Pending': 'border-yellow-500', 'Doing': 'border-blue-500', 'Done': 'border-green-500', 'Cancel': 'border-red-400' }[o[8]] || 'border-gray-200';
+        const canManage = (currentUser.role === 'Chef' || currentUser.role === 'Head Chef');
+
+        return `
+          <div class="bg-white p-5 rounded-2xl shadow-md border-l-8 ${statusColor} text-left mb-4 transition-all">
+            <div class="flex justify-between items-start">
+              <div class="flex-1 pr-2">
+                <div class="flex gap-2 mb-2">
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-gray-100 uppercase tracking-tighter">Frog ${o[9]}</span>
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-500 uppercase tracking-tighter">${o[8]}</span>
+                </div>
+                <h4 class="font-bold text-gray-800 text-lg leading-tight">${o[4]}</h4>
+                <p class="text-[11px] text-gray-400 mt-1">${o[3]} • ${o[6]}</p>
+                <div class="mt-3 text-sm text-gray-600 italic bg-gray-50 p-3 rounded-xl border border-gray-100">
+                  "${o[5] || 'ไม่มีรายละเอียดเพิ่มเติม'}"
+                </div>
+              </div>
+              <div class="text-right bg-orange-50 p-3 rounded-2xl border border-orange-100 min-w-[70px]">
+                <span class="block font-black text-2xl text-orange-600">${o[7]}</span>
+                <span class="text-[9px] text-orange-400 uppercase font-bold italic">CB</span>
+              </div>
+            </div>
+
+            ${canManage ? `
+              <div class="mt-5 grid grid-cols-3 gap-2">
+                <button onclick="editOrderModal('${o[0]}', '${encodeURIComponent(o[5])}', ${o[7]}, '${o[9]}', '${o[8]}')" 
+                  class="bg-blue-500 text-white text-[11px] py-2.5 rounded-xl font-bold shadow-sm active:bg-blue-600">1. ปรับแก้</button>
+                
+                <button onclick="finishOrderModal('${o[0]}', ${o[7]})" 
+                  class="bg-green-500 text-white text-[11px] py-2.5 rounded-xl font-bold shadow-sm active:bg-green-600 ${o[8] === 'Done' ? 'opacity-30 pointer-events-none' : ''}">2. เสร็จงาน</button>
+                
+                <button onclick="deleteItem('Orders', '${o[0]}')" 
+                  class="bg-gray-100 text-gray-400 text-[11px] py-2.5 rounded-xl font-bold active:bg-gray-200">3. ลบทิ้ง</button>
+              </div>
+            ` : ''}
           </div>
-          ${(currentUser.role === 'Chef' || currentUser.role === 'Head Chef') && o[8] !== 'Done' ? `
-            <button onclick="finishOrderModal('${o[0]}', ${o[7]})" class="w-full mt-4 bg-green-500 text-white py-2 rounded-lg font-bold">จบงาน & ปรับ CB/BP</button>
-          ` : ''}
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
-    async function finishOrderModal(id, cb) {
+    async function editOrderModal(id, detail, cb, priority, status) {
       const { value: formValues } = await Swal.fire({
-        title: 'จบงาน/ประเมินผล',
+        title: 'แก้ไขรายละเอียดงาน',
         html: `
-          <input id="swal-cb" type="number" class="swal2-input" value="${cb}" placeholder="Adjusted CB">
-          <input id="swal-bp" type="number" class="swal2-input" value="${cb * 2}" placeholder="BP Point">
+          <div class="text-left space-y-4">
+            <div>
+              <label class="text-[11px] font-bold text-gray-400 uppercase">บรีฟงานใหม่:</label>
+              <textarea id="edit-detail" class="swal2-textarea !m-0 !w-full !h-24 !text-sm">${decodeURIComponent(detail)}</textarea>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="text-[11px] font-bold text-gray-400 uppercase">ค่าพลัง (CB):</label>
+                <input id="edit-cb" type="number" class="swal2-input !m-0 !w-full" value="${cb}">
+              </div>
+              <div>
+                <label class="text-[11px] font-bold text-gray-400 uppercase">RANK (Frog):</label>
+                <select id="edit-prio" class="swal2-input !m-0 !w-full !text-sm">
+                  <option value="A" ${priority=='A'?'selected':''}>A - Big Frog</option>
+                  <option value="B" ${priority=='B'?'selected':''}>B - Tadpole</option>
+                  <option value="C" ${priority=='C'?'selected':''}>C - Normal</option>
+                  <option value="D" ${priority=='D'?'selected':''}>D - Low</option>
+                  <option value="E" ${priority=='E'?'selected':''}>E - Backlog</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label class="text-[11px] font-bold text-gray-400 uppercase">สถานะ:</label>
+              <select id="edit-status" class="swal2-input !m-0 !w-full !text-sm">
+                <option value="Pending" ${status=='Pending'?'selected':''}>รอคิว (Pending)</option>
+                <option value="Doing" ${status=='Doing'?'selected':''}>กำลังทำ (Doing)</option>
+                <option value="Done" ${status=='Done'?'selected':''}>เสร็จแล้ว (Done)</option>
+                <option value="Cancel" ${status=='Cancel'?'selected':''}>ยกเลิก (Cancel)</option>
+              </select>
+            </div>
+          </div>
         `,
+        showCancelButton: true,
+        confirmButtonText: 'บันทึก',
+        preConfirm: () => ({
+          id,
+          detail: document.getElementById('edit-detail').value,
+          cb: document.getElementById('edit-cb').value,
+          priority: document.getElementById('edit-prio').value,
+          status: document.getElementById('edit-status').value,
+          action: 'updateOrder'
+        })
+      });
+
+      if (formValues) {
+        Swal.showLoading();
+        await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(formValues) });
+        Swal.fire({ title: 'สำเร็จ', icon: 'success', timer: 1000, showConfirmButton: false });
+        fetchOrders();
+      }
+    }
+
+    async function finishOrderModal(id, currentCb) {
+      const { value: formValues } = await Swal.fire({
+        title: 'ยืนยันจบงาน',
+        html: `
+          <div class="text-left space-y-3">
+            <p class="text-xs text-gray-500">ตรวจสอบความถูกต้องครั้งสุดท้ายก่อนบันทึกสถิติลงฐานข้อมูล</p>
+            <div>
+              <label class="text-[10px] font-bold text-blue-500">ADJUSTED CB:</label>
+              <input id="swal-cb" type="number" class="swal2-input !m-0 !w-full" value="${currentCb}">
+            </div>
+            <div>
+              <label class="text-[10px] font-bold text-green-500">จิตพิสัย (BP POINT):</label>
+              <input id="swal-bp" type="number" class="swal2-input !m-0 !w-full" value="${currentCb * 2}">
+            </div>
+          </div>
+        `,
+        confirmButtonText: 'ยืนยันปิดงาน',
+        confirmButtonColor: '#10b981',
+        showCancelButton: true,
         preConfirm: () => ({ cb: document.getElementById('swal-cb').value, bp: document.getElementById('swal-bp').value })
       });
+
       if (formValues) {
+        Swal.showLoading();
         await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'finishOrder', id, ...formValues }) });
-        location.reload();
+        Swal.fire('สำเร็จ', 'บันทึก CB/BP เรียบร้อย', 'success').then(() => location.reload());
       }
+    }
+
+    async function submitOrder() {
+      const title = document.getElementById('jobTitle').value;
+      const type = document.getElementById('jobType').value;
+      const detail = document.getElementById('jobDetail').value;
+      const baseCb = parseInt(document.getElementById('estCBDisplay').innerText);
+
+      if (!title || !type) { Swal.fire('ข้อมูลไม่ครบ', 'กรุณาระบุชื่อโครงการและประเภทงาน', 'warning'); return; }
+
+      Swal.showLoading();
+      const payload = { action: 'submitOrder', lineId: currentUser.userId, name: currentUser.displayName, title, detail, type, baseCb };
+      await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
+      
+      Swal.fire('เรียบร้อย', 'ออเดอร์ของคุณเข้าครัวแล้ว', 'success');
+      document.getElementById('jobTitle').value = "";
+      document.getElementById('jobDetail').value = "";
+      fetchOrders();
     }
 
     async function loadConfig() {
@@ -184,22 +322,29 @@
       const data = await res.json();
       const rows = data.slice(1);
       document.getElementById('jobType').innerHTML = '<option value="">เลือกประเภทงาน...</option>' + rows.map(r => `<option value="${r[1]}" data-cb="${r[2]}">${r[1]}</option>`).join('');
-      document.getElementById('config-list').innerHTML = rows.map(r => `<div class="flex justify-between bg-gray-50 p-2 rounded-lg"><span>${r[1]} (${r[2]} CB)</span><button onclick="deleteItem('Config','${r[0]}')" class="text-red-400">ลบ</button></div>`).join('');
+      document.getElementById('config-list').innerHTML = rows.map(r => `<div class="flex justify-between items-center bg-gray-50 p-3 rounded-xl border border-gray-100"><span>${r[1]} <b class="text-orange-500">(${r[2]} CB)</b></span><button onclick="deleteItem('Config','${r[0]}')" class="text-red-400 text-xs font-bold">ลบ</button></div>`).join('');
     }
 
-    async function submitOrder() {
-      const payload = {
-        action: 'submitOrder',
-        lineId: currentUser.userId,
-        name: currentUser.displayName,
-        title: document.getElementById('jobTitle').value,
-        detail: document.getElementById('jobDetail').value,
-        type: document.getElementById('jobType').value,
-        baseCb: parseInt(document.getElementById('estCBDisplay').innerText)
-      };
-      await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
-      Swal.fire('สำเร็จ!', 'ส่งงานแล้วครับ', 'success');
-      fetchOrders();
+    async function deleteItem(tab, id) {
+      const confirmText = tab === 'Orders' ? "ลบออเดอร์นี้ออกจากคิว?" : "ลบประเภทงานนี้?";
+      const { isConfirmed } = await Swal.fire({ title: 'ยืนยันการลบ', text: confirmText, icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444' });
+      if (isConfirmed) {
+        Swal.showLoading();
+        await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteOrder', tab, id }) });
+        location.reload();
+      }
+    }
+
+    async function addConfig() {
+      const { value: formValues } = await Swal.fire({
+        title: 'เพิ่มประเภทงาน',
+        html: '<input id="c-cat" class="swal2-input" placeholder="ชื่อประเภท"><input id="c-cb" type="number" class="swal2-input" placeholder="ค่า CB">',
+        preConfirm: () => [document.getElementById('c-cat').value, document.getElementById('c-cb').value]
+      });
+      if (formValues && formValues[0]) {
+        await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'saveConfig', category: formValues[0], cb: formValues[1] }) });
+        loadConfig();
+      }
     }
 
     function showTab(t) {
