@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chayagorn Kitchen | Chef Pro</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Kanit', sans-serif; background-color: #f3f4f6; }
+    .active-tab { border-bottom: 4px solid #f59e0b; color: #f59e0b; font-weight: bold; }
+    .stat-card { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+    .chart-bar { transition: width 1s ease-in-out; }
+    .filter-btn-active { background-color: #f59e0b; color: white; border-color: #f59e0b; }
+  </style>
+</head>
+<body class="pb-20">
+
+  <div id="app" class="max-w-2xl mx-auto">
+    <header class="bg-gradient-to-r from-yellow-500 to-orange-600 p-6 text-white text-center shadow-lg rounded-b-3xl mb-4">
+      <h1 class="text-3xl font-bold uppercase tracking-tight">Chayagorn Kitchen</h1>
+      <p class="text-sm opacity-90 italic">Eat That Frog! - บริหารพลังงานเชฟ</p>
+    </header>
+
+    <nav class="bg-white shadow-md sticky top-0 z-20 flex justify-around p-2 mb-4 rounded-xl mx-4">
+      <button onclick="showTab('customer')" id="tab-customer" class="flex-1 py-2 active-tab text-sm">ลูกค้า</button>
+      <button onclick="showTab('chef')" id="tab-chef" class="flex-1 py-2 text-sm">งานเชฟ</button>
+      <button onclick="showTab('admin')" id="tab-admin" class="flex-1 py-2 text-sm">จัดการ</button>
+    </nav>
+
+    <div id="page-customer" class="p-4 space-y-6">
+      <div class="stat-card p-5 rounded-2xl shadow-lg text-white">
+        <div class="flex items-center gap-3 mb-4">
+          <img id="user-pic" class="w-12 h-12 rounded-full border-2 border-white/20" src="">
+          <div>
+            <h3 class="text-xl font-bold" id="display-name">Loading...</h3>
+            <span id="display-role" class="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-bold uppercase">ROLE</span>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4 text-center">
+          <div class="bg-black/10 p-3 rounded-xl"><p class="text-[10px] opacity-70 uppercase">BP Point</p><h4 class="text-2xl font-black" id="display-bp">0</h4></div>
+          <div class="bg-black/10 p-3 rounded-xl"><p class="text-[10px] opacity-70 uppercase">ACC. CB</p><h4 class="text-2xl font-black" id="display-cb">0</h4></div>
+        </div>
+      </div>
+
+      <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-100">
+        <h2 class="text-lg font-bold mb-4">📋 สั่งออเดอร์ใหม่</h2>
+        <div class="space-y-3">
+          <input id="jobTitle" type="text" placeholder="ชื่อโครงการ" class="w-full p-4 bg-gray-50 rounded-xl outline-none border focus:border-yellow-500">
+          <textarea id="jobDetail" placeholder="บรีฟงาน..." class="w-full p-4 bg-gray-50 rounded-xl h-20 outline-none border focus:border-yellow-500"></textarea>
+          <select id="jobType" class="w-full p-4 bg-gray-50 rounded-xl border" onchange="updateEstCB()"></select>
+          <div class="bg-yellow-50 p-4 rounded-xl flex justify-between items-center border border-yellow-100">
+             <span class="text-sm font-bold text-yellow-700 uppercase">Estimated Weight:</span>
+             <span class="text-2xl font-black text-yellow-600"><span id="estCBDisplay">0</span> CB</span>
+          </div>
+          <button onclick="submitOrder()" class="w-full bg-yellow-500 text-white p-4 rounded-xl font-bold shadow-lg hover:bg-yellow-600">ส่งเข้าครัว</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="page-chef" class="p-4 hidden">
+      <div class="bg-white p-4 rounded-2xl shadow-sm mb-4 space-y-3 border border-gray-100">
+        <div class="flex flex-wrap gap-2">
+          <button onclick="filterOrders('All')" class="filter-btn text-[10px] px-3 py-1.5 rounded-full border filter-btn-active font-bold">ทั้งหมด</button>
+          <button onclick="filterOrders('Pending')" class="filter-btn text-[10px] px-3 py-1.5 rounded-full border bg-white font-bold">รอคิว</button>
+          <button onclick="filterOrders('Doing')" class="filter-btn text-[10px] px-3 py-1.5 rounded-full border bg-white font-bold">กำลังทำ</button>
+          <button onclick="filterOrders('Done')" class="filter-btn text-[10px] px-3 py-1.5 rounded-full border bg-white font-bold">เสร็จแล้ว</button>
+        </div>
+        <div class="flex justify-between items-center pt-2 border-t">
+          <span class="text-[10px] font-bold text-gray-400 uppercase">เรียงลำดับ:</span>
+          <select onchange="sortOrders(this.value)" class="text-[11px] bg-gray-50 border rounded-lg px-2 py-1 outline-none font-bold">
+            <option value="date-desc">ล่าสุดไปเก่าสุด</option>
+            <option value="date-asc">เก่าสุดไปล่าสุด</option>
+            <option value="rank-asc">กบใหญ่ไปกบเล็ก (A -> E)</option>
+            <option value="cb-desc">งานหนักไปงานเบา</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="order-list" class="space-y-4"></div>
+    </div>
+
+    <div id="page-admin" class="p-4 hidden space-y-6">
+        <div id="dashboard-section" class="bg-white p-6 rounded-3xl shadow-md border border-gray-100 hidden">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">📊 Head Chef Insights</h3>
+            <div class="grid grid-cols-2 gap-4 mb-6 text-center">
+                <div class="p-4 bg-blue-50 rounded-2xl border border-blue-100">
+                    <p class="text-[10px] text-blue-400 font-bold">JOB PER 100 CB</p>
+                    <h4 id="ratio-job-cb" class="text-2xl font-black text-blue-600">0</h4>
+                </div>
+                <div class="p-4 bg-green-50 rounded-2xl border border-green-100">
+                    <p class="text-[10px] text-green-400 font-bold">TOTAL CB DONE</p>
+                    <h4 id="total-finished-cb" class="text-2xl font-black text-green-600">0</h4>
+                </div>
+            </div>
+            <div id="user-experience-list" class="space-y-4"></div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl shadow-md border-t-4 border-yellow-500">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="font-bold">⚙️ ประเภทงาน (Config)</h3>
+            <button onclick="addConfig()" class="bg-yellow-500 text-white px-4 py-1 rounded-full text-xs font-bold">+ เพิ่ม</button>
+          </div>
+          <div id="config-list" class="space-y-2 text-sm"></div>
+        </div>
+    </div>
+  </div>
+
+  <script>
+    const LIFF_ID = '2008904245-TsV7LL73';
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbxrQZ_68y9BQmGMdIZo5PF6RnePN-7BgV8bc5gSbfXSusjQwdDywBqejyXXwbbgm2JXKA/exec';
+    
+    let currentUser = {};
+    let allOrders = [];
+    let currentFilter = 'All';
+    let currentSort = 'date-desc';
+
+    async function init() {
+      await liff.init({ liffId: LIFF_ID });
+      if (!liff.isLoggedIn()) { liff.login(); return; }
+      const profile = await liff.getProfile();
+      currentUser = profile;
+      document.getElementById('user-pic').src = profile.pictureUrl;
+      await loadUserStats();
+      loadConfig();
+      fetchOrders();
+    }
+
+    async function loadUserStats() {
+      const res = await fetch(`${GAS_URL}?action=getStats&lineId=${currentUser.userId}&name=${encodeURIComponent(currentUser.displayName)}&pictureUrl=${encodeURIComponent(currentUser.pictureUrl)}`);
+      const s = await res.json();
+      document.getElementById('display-name').innerText = s.name;
+      document.getElementById('display-bp').innerText = s.currentBp;
+      document.getElementById('display-cb').innerText = s.accCb;
+      document.getElementById('display-role').innerText = s.role;
+      currentUser.role = s.role;
+      if (s.role === 'Head Chef') {
+        document.getElementById('dashboard-section').classList.remove('hidden');
+        loadDashboard();
+      }
+    }
+
+    async function loadDashboard() {
+        const res = await fetch(`${GAS_URL}?action=getDashboard`);
+        const data = await res.json();
+        const ratio = data.totalCb > 0 ? ((data.doneJobs / data.totalCb) * 100).toFixed(1) : 0;
+        document.getElementById('ratio-job-cb').innerText = ratio;
+        document.getElementById('total-finished-cb').innerText = data.totalCb;
+        const sorted = data.userExp.sort((a,b) => b.cb - a.cb);
+        const maxCb = Math.max(...sorted.map(u=>u.cb), 1);
+        document.getElementById('user-experience-list').innerHTML = sorted.map(u => `
+          <div>
+            <div class="flex justify-between text-[11px] mb-1 font-bold"><span>${u.name}</span><span class="text-orange-500">${u.cb} CB</span></div>
+            <div class="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden"><div class="chart-bar bg-orange-400 h-full" style="width:${(u.cb/maxCb*100)}%"></div></div>
+          </div>
+        `).join('');
+    }
+
+    async function fetchOrders() {
+      const res = await fetch(GAS_URL);
+      const data = await res.json();
+      allOrders = data.slice(1);
+      processAndRender();
+    }
+
+    function filterOrders(status) {
+      currentFilter = status;
+      document.querySelectorAll('.filter-btn').forEach(b => {
+        b.classList.remove('filter-btn-active');
+        if(b.innerText.includes(status === 'All' ? 'ทั้งหมด' : status === 'Pending' ? 'รอคิว' : status === 'Doing' ? 'กำลังทำ' : 'เสร็จแล้ว')) b.classList.add('filter-btn-active');
+      });
+      processAndRender();
+    }
+
+    function sortOrders(val) {
+      currentSort = val;
+      processAndRender();
+    }
+
+    function processAndRender() {
+      let filtered = allOrders;
+      if (currentFilter !== 'All') filtered = allOrders.filter(o => o[8] === currentFilter);
+      
+      filtered.sort((a, b) => {
+        if (currentSort === 'date-desc') return new Date(b[1]) - new Date(a[1]);
+        if (currentSort === 'date-asc') return new Date(a[1]) - new Date(b[1]);
+        if (currentSort === 'rank-asc') return a[9].localeCompare(b[9]);
+        if (currentSort === 'cb-desc') return b[7] - a[7];
+      });
+
+      renderOrders(filtered);
+    }
+
+    function renderOrders(rows) {
+      const list = document.getElementById('order-list');
+      if (rows.length === 0) { list.innerHTML = `<p class="text-center py-10 text-gray-400">ไม่พบรายการงาน</p>`; return; }
+      
+      list.innerHTML = rows.map(o => {
+        const statusColor = { 'Pending':'border-yellow-400', 'Doing':'border-blue-400', 'Done':'border-green-400', 'Cancel':'border-red-400' }[o[8]];
+        const isChef = (currentUser.role === 'Chef' || currentUser.role === 'Head Chef');
+        
+        return `
+          <div class="bg-white p-5 rounded-2xl shadow-sm border-l-8 ${statusColor} mb-4">
+            <div class="flex justify-between items-start">
+              <div class="flex-1">
+                <div class="flex gap-2 mb-2">
+                  <span class="text-[9px] font-bold px-2 py-0.5 rounded bg-gray-100 uppercase tracking-tighter text-gray-500 italic">Frog Rank ${o[9]}</span>
+                  <span class="text-[9px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-500 uppercase tracking-tighter">${o[8]}</span>
+                </div>
+                <h4 class="font-bold text-gray-800 text-base leading-tight">${o[4]}</h4>
+                <p class="text-[10px] text-gray-400 mt-1">${o[3]} • ${new Date(o[1]).toLocaleDateString('th-TH')}</p>
+                <div class="mt-3 text-xs text-gray-600 italic bg-gray-50 p-2 rounded-lg">"${o[5] || '...'}"</div>
+              </div>
+              <div class="text-right ml-4">
+                <span class="block font-black text-xl text-orange-500">${o[7]}</span>
+                <span class="text-[8px] text-gray-400 font-bold uppercase italic">CB Unit</span>
+              </div>
+            </div>
+            ${isChef ? `
+              <div class="mt-4 grid grid-cols-3 gap-2">
+                <button onclick="editOrderModal('${o[0]}', '${encodeURIComponent(o[5])}', ${o[7]}, '${o[9]}', '${o[8]}')" class="bg-blue-500 text-white text-[10px] py-2 rounded-xl font-bold">1. ปรับแก้</button>
+                <button onclick="finishOrderModal('${o[0]}', ${o[7]})" class="bg-green-500 text-white text-[10px] py-2 rounded-xl font-bold ${o[8] === 'Done' ? 'opacity-30 pointer-events-none' : ''}">2. เสร็จงาน</button>
+                <button onclick="deleteItem('Orders', '${o[0]}')" class="bg-gray-100 text-gray-400 text-[10px] py-2 rounded-xl font-bold">3. ลบทิ้ง</button>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function editOrderModal(id, detail, cb, priority, status) {
+      const { value: formValues } = await Swal.fire({
+        title: 'แก้ไขรายละเอียดงาน',
+        html: `
+          <div class="text-left space-y-3">
+            <textarea id="edit-detail" class="swal2-textarea !m-0 !w-full !h-20 !text-sm">${decodeURIComponent(detail)}</textarea>
+            <div class="grid grid-cols-2 gap-2">
+              <input id="edit-cb" type="number" class="swal2-input !m-0 !w-full" value="${cb}" placeholder="CB">
+              <select id="edit-prio" class="swal2-input !m-0 !w-full !text-sm">
+                <option value="A" ${priority=='A'?'selected':''}>Rank A</option>
+                <option value="B" ${priority=='B'?'selected':''}>Rank B</option>
+                <option value="C" ${priority=='C'?'selected':''}>Rank C</option>
+                <option value="D" ${priority=='D'?'selected':''}>Rank D</option>
+                <option value="E" ${priority=='E'?'selected':''}>Rank E</option>
+              </select>
+            </div>
+            <select id="edit-status" class="swal2-input !m-0 !w-full !text-sm">
+              <option value="Pending" ${status=='Pending'?'selected':''}>Pending</option>
+              <option value="Doing" ${status=='Doing'?'selected':''}>Doing</option>
+              <option value="Done" ${status=='Done'?'selected':''}>Done</option>
+              <option value="Cancel" ${status=='Cancel'?'selected':''}>Cancel</option>
+            </select>
+          </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'บันทึก',
+        preConfirm: () => ({ id, detail: document.getElementById('edit-detail').value, cb: document.getElementById('edit-cb').value, priority: document.getElementById('edit-prio').value, status: document.getElementById('edit-status').value, action: 'updateOrder' })
+      });
+      if (formValues) {
+        Swal.showLoading();
+        await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(formValues) });
+        fetchOrders();
+        Swal.close();
+      }
+    }
+
+    async function finishOrderModal(id, currentCb) {
+      const { value: v } = await Swal.fire({
+        title: 'ยืนยันจบงาน',
+        html: `<input id="swal-cb" type="number" class="swal2-input" value="${currentCb}" placeholder="Final CB"><input id="swal-bp" type="number" class="swal2-input" value="${currentCb * 2}" placeholder="BP">`,
+        showCancelButton: true,
+        preConfirm: () => ({ cb: document.getElementById('swal-cb').value, bp: document.getElementById('swal-bp').value })
+      });
+      if (v) {
+        Swal.showLoading();
+        await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'finishOrder', id, ...v }) });
+        location.reload();
+      }
+    }
+
+    async function submitOrder() {
+      const title = document.getElementById('jobTitle').value;
+      const type = document.getElementById('jobType').value;
+      if (!title || !type) { Swal.fire('Error', 'กรุณาระบุข้อมูลให้ครบ', 'warning'); return; }
+      Swal.showLoading();
+      await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'submitOrder', lineId: currentUser.userId, name: currentUser.displayName, title, detail: document.getElementById('jobDetail').value, type, baseCb: parseInt(document.getElementById('estCBDisplay').innerText) }) });
+      Swal.fire('สำเร็จ', 'ส่งออเดอร์แล้ว', 'success').then(() => fetchOrders());
+      document.getElementById('jobTitle').value = ""; document.getElementById('jobDetail').value = "";
+    }
+
+    async function loadConfig() {
+      const res = await fetch(`${GAS_URL}?action=getConfig`);
+      const data = await res.json();
+      const rows = data.slice(1);
+      document.getElementById('jobType').innerHTML = '<option value="">เลือกประเภทงาน...</option>' + rows.map(r => `<option value="${r[1]}" data-cb="${r[2]}">${r[1]}</option>`).join('');
+      document.getElementById('config-list').innerHTML = rows.map(r => `<div class="flex justify-between bg-gray-50 p-2 rounded-lg"><span>${r[1]} (${r[2]} CB)</span><button onclick="deleteItem('Config','${r[0]}')" class="text-red-400 font-bold">ลบ</button></div>`).join('');
+    }
+
+    async function deleteItem(tab, id) {
+      if(!confirm("ยืนยันการลบ?")) return;
+      Swal.showLoading();
+      await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteOrder', tab, id }) });
+      location.reload();
+    }
+
+    async function addConfig() {
+      const { value: v } = await Swal.fire({
+        title: 'เพิ่มประเภทงาน',
+        html: '<input id="c-cat" class="swal2-input" placeholder="ชื่อ"><input id="c-cb" type="number" class="swal2-input" placeholder="CB">',
+        preConfirm: () => [document.getElementById('c-cat').value, document.getElementById('c-cb').value]
+      });
+      if (v) { await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'saveConfig', category: v[0], cb: v[1] }) }); loadConfig(); }
+    }
+
+    function showTab(t) {
+      ['customer', 'chef', 'admin'].forEach(tab => document.getElementById('page-'+tab).classList.add('hidden'));
+      ['customer', 'chef', 'admin'].forEach(tab => document.getElementById('tab-'+tab).classList.remove('active-tab'));
+      document.getElementById('page-'+t).classList.remove('hidden');
+      document.getElementById('tab-'+t).classList.add('active-tab');
+    }
+
+    function updateEstCB() {
+      const sel = document.getElementById('jobType');
+      document.getElementById('estCBDisplay').innerText = sel.options[sel.selectedIndex]?.dataset.cb || 0;
+    }
+
+    init();
+  </script>
+</body>
+</html>
