@@ -127,33 +127,34 @@
     }
 
     // 2. เมื่อ Login แล้ว ทำงานหลัก
-    async function runApp() {
-      const profile = await liff.getProfile();
-      document.getElementById('user-name').innerText = profile.displayName;
-      document.getElementById('user-img').src = profile.pictureUrl;
+    // แก้ไขฟังก์ชัน runApp ใน index.html
+async function runApp() {
+  const profile = await liff.getProfile();
+  document.getElementById('user-name').innerText = profile.displayName;
+  document.getElementById('user-img').src = profile.pictureUrl;
 
-      // ดึงสถิติรายบุคคล (Role, CB, BP)
-      try {
-        const res = await fetch(`${GAS_URL}?action=getStats&lineId=${profile.userId}`);
-        const stats = await res.json();
-        
-        userRole = stats.role || 'User';
-        document.getElementById('role-badge').innerText = userRole;
-        document.getElementById('stat-cb').innerText = (stats.accCb || 0) + " CB";
-        document.getElementById('stat-bp').innerText = (stats.currentBp || 0) + " BP";
-        
-        // ถ้าเป็น Chef ให้เปลี่ยนสี Badge
-        if(userRole === 'Chef') {
-           document.getElementById('role-badge').classList.add('bg-orange-500/30', 'text-orange-200');
-        }
-      } catch (e) {
-        console.log("Stats error:", e);
-      }
-
-      document.getElementById('loading').style.display = 'none';
-      document.getElementById('app').style.display = 'block';
-      fetchData();
+  try {
+    // ส่งชื่อและรูปไปด้วย เพื่อให้ GAS บันทึกลง Members ได้ถูกต้องในครั้งแรก
+    const res = await fetch(`${GAS_URL}?action=getStats&lineId=${profile.userId}&name=${encodeURIComponent(profile.displayName)}&pictureUrl=${encodeURIComponent(profile.pictureUrl)}`);
+    const stats = await res.json();
+    
+    userRole = stats.role || 'User';
+    document.getElementById('role-badge').innerText = userRole;
+    document.getElementById('stat-cb').innerText = (stats.accCb || 0) + " CB";
+    document.getElementById('stat-bp').innerText = (stats.currentBp || 0) + " BP";
+    
+    // ปรับสี Badge ตาม Role
+    if(userRole === 'Chef' || userRole === 'Head Chef') {
+       document.getElementById('role-badge').className = "inline-block bg-orange-500 text-white text-[10px] px-2 py-0.5 rounded-md mt-1 font-bold";
     }
+  } catch (e) {
+    console.log("Stats error:", e);
+  }
+
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  fetchData();
+}
 
     // 3. ดึงรายการงานทั้งหมด
     async function fetchData() {
