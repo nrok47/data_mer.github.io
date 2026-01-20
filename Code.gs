@@ -6,6 +6,10 @@ function doGet(e) {
   if (action === 'getStats') return jsonResponse(getUserStats(e.parameter.lineId, e.parameter.name, e.parameter.pictureUrl));
   if (action === 'getConfig') return jsonResponse(getTableData('Config'));
   if (action === 'getRewards') return jsonResponse(getTableData('Rewards'));
+  if (action === 'getDashboard') {
+    const stats = getUserStats(e.parameter.lineId);
+    if (stats.role === 'Head Chef') return jsonResponse(getDashboard());
+  }
   
   // Default: ดึงรายการ Orders ทั้งหมด
   const data = getTableData('Orders');
