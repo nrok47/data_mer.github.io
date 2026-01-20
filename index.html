@@ -1,18 +1,93 @@
 <!DOCTYPE html>
-<html lang="th">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LINE OA Order System</title>
-    <style>
-        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
-        a { display: block; margin: 20px; padding: 10px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chayagorn Kitchen - GitHub Edition</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <h1>ระบบสั่งอาหาร LINE OA</h1>
-    <p>เข้าผ่าน LINE Official Account เท่านั้น</p>
-    <a href="liff/index.html">หน้า Order (สำหรับทดสอบ)</a>
-    <a href="liff/chef.html">Chef Dashboard (สำหรับทดสอบ)</a>
+<body class="bg-gray-100 min-h-screen p-4">
+
+  <div id="loading" class="text-center mt-20 font-bold text-gray-500">กำลังโหลด...</div>
+
+  <div id="login-page" class="hidden text-center mt-20">
+    <h1 class="text-2xl font-bold mb-6">ยินดีต้อนรับสู่ Chayagorn Kitchen</h1>
+    <button onclick="liff.login()" class="bg-green-600 text-white px-8 py-3 rounded-full shadow-lg text-lg">
+      เข้าสู่ระบบด้วย LINE
+    </button>
+  </div>
+
+  <div id="app" class="hidden max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6">
+    <div class="flex items-center space-x-4 mb-6">
+      <img id="user-img" class="h-12 w-12 rounded-full border-2 border-green-500">
+      <h2 id="user-name" class="text-xl font-bold"></h2>
+    </div>
+
+    <form id="order-form" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700">ชื่อรายการ</label>
+        <input type="text" id="title" class="w-full border rounded p-2" required>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">รายละเอียด</label>
+        <textarea id="detail" class="w-full border rounded p-2"></textarea>
+      </div>
+      <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded font-bold">ส่งข้อมูล</button>
+    </form>
+  </div>
+
+  <script>
+    const LIFF_ID = 'ใส่_LIFF_ID_ของคุณที่นี่';
+    const GAS_URL = 'ใส่_URL_ของ_Web_App_ที่ได้จากขั้นตอนที่_1';
+
+    async function init() {
+      try {
+        await liff.init({ liffId: LIFF_ID });
+        if (liff.isLoggedIn()) {
+          showApp();
+        } else {
+          document.getElementById('loading').classList.add('hidden');
+          document.getElementById('login-page').classList.remove('hidden');
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function showApp() {
+      const profile = await liff.getProfile();
+      document.getElementById('user-name').innerText = profile.displayName;
+      document.getElementById('user-img').src = profile.pictureUrl;
+      
+      document.getElementById('loading').classList.add('hidden');
+      document.getElementById('app').classList.remove('hidden');
+    }
+
+    document.getElementById('order-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const profile = await liff.getProfile();
+      const payload = {
+        lineId: profile.userId,
+        name: profile.displayName,
+        title: document.getElementById('title').value,
+        detail: document.getElementById('detail').value,
+        type: 'Order'
+      };
+
+      // ส่งข้อมูลไปที่ Google Sheets (GAS)
+      const res = await fetch(GAS_URL, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      
+      if(res.ok) {
+        alert('ส่งข้อมูลสำเร็จ!');
+        document.getElementById('order-form').reset();
+      }
+    };
+
+    init();
+  </script>
 </body>
 </html>
