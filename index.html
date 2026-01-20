@@ -159,10 +159,16 @@
     }
 
     async function fetchOrders() {
-      const res = await fetch(GAS_URL);
-      const data = await res.json();
-      allOrders = data.slice(1);
-      processAndRender();
+      const list = document.getElementById('order-list');
+      list.innerHTML = '<div class="text-center py-10"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500 mx-auto"></div><p class="mt-2 text-gray-400">กำลังโหลด...</p></div>';
+      try {
+        const res = await fetch(GAS_URL);
+        const data = await res.json();
+        allOrders = data.slice(1);
+        processAndRender();
+      } catch (err) {
+        list.innerHTML = '<p class="text-center py-10 text-red-400">เกิดข้อผิดพลาดในการโหลดข้อมูล</p>';
+      }
     }
 
     function filterOrders(status) {

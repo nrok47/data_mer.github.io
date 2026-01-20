@@ -47,9 +47,18 @@ function getUserStats(lineId, name, pic) {
 }
 
 function submitOrder(d) {
-  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('Orders');
-  sheet.appendRow(["ORD-"+new Date().getTime(), new Date(), d.lineId, d.name, d.title, d.detail, d.type, d.baseCb, "Pending", "B", 0]);
-  return {status: "success"};
+  try {
+    if (!d.title || !d.type || d.baseCb <= 0) {
+      return {status: "error", message: "Invalid input data"};
+    }
+    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('Orders');
+    sheet.appendRow(["ORD-"+new Date().getTime(), new Date(), d.lineId, d.name, d.title, d.detail, d.type, d.baseCb, "Pending", "B", 0]);
+    Logger.log('Order submitted: ' + d.title);
+    return {status: "success", message: "สั่งเมนูงานเรียบร้อย!"};
+  } catch (e) {
+    Logger.log('Error in submitOrder: ' + e.message);
+    return {status: "error", message: e.message};
+  }
 }
 
 function updateOrder(d) {
