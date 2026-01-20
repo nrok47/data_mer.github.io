@@ -1,113 +1,107 @@
 const SPREADSHEET_ID = '1miTkudbK9Gko3JssajCsc06XeM2jQkl_8pa9Qiufto8';
 
-// 1. ฟังก์ชันดึงข้อมูล (Read)
-function doGet(e) {
-  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-  const action = e.parameter.action;
 
-  if (action === 'getStats') {
-    const lineId = e.parameter.lineId;
-    return jsonResponse(getUserStats(lineId));
-  }
+function doGet(e) {
+  const action = e.parameter.action;
+  if (action === 'getStats') return jsonResponse(getUserStats(e.parameter.lineId, e.parameter.name, e.parameter.pictureUrl));
+  if (action === 'getConfig') return jsonResponse(getTableData('Config'));
+  if (action === 'getRewards') return jsonResponse(getTableData('Rewards'));
   
   // Default: ดึงรายการ Orders ทั้งหมด
-  const sheet = ss.getSheetByName('Orders');
-  const data = sheet.getDataRange().getValues();
+  const data = getTableData('Orders');
   return jsonResponse(data);
 }
 
-// 2. ฟังก์ชันรับข้อมูลและอัปเดต (Write/Update)
 function doPost(e) {
   const data = JSON.parse(e.postData.contents);
   const action = data.action;
 
   if (action === 'submitOrder') return jsonResponse(submitOrder(data));
   if (action === 'finishOrder') return jsonResponse(finishOrder(data));
-  if (action === 'deleteOrder') return jsonResponse(deleteOrder(data.id));
+  if (action === 'updateOrder') return jsonResponse(updateOrder(data));
+  if (action === 'deleteOrder') return jsonResponse(deleteRowItem(data.tab, data.id));
+  if (action === 'saveConfig') return jsonResponse(saveConfig(data));
+  if (action === 'saveReward') return jsonResponse(saveReward(data));
   
   return jsonResponse({status: "error", message: "No action found"});
 }
 
 function jsonResponse(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj))
-    .setMimeType(ContentService.MimeType.JSON);
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
 
-// --- LOGIC FUNCTIONS ---
+// --- Logic Functions ---
 
-function submitOrder(data) {
-  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('Orders');
-  sheet.appendRow([
-    "ORD-" + new Date().getTime(),
-    new Date(),
-    data.lineId,
-    data.name,
-    data.title,
-    data.detail,
-    data.type,
-    data.cb || 3, // Default CB
-    "Pending",
-    data.priority || "B",
-    0 // BP_Earned
-  ]);
-  return {status: "success", message: "สั่งเมนูงานเรียบร้อย!"};
+function getTableData(tabName) {
+  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(tabName);
+  return sheet.getDataRange().getValues();
 }
 
-function finishOrder(data) {
-  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-  const orderSheet = ss.getSheetByName('Orders');
-  const memberSheet = ss.getSheetByName('Members');
-  
-  let customerLineId = "";
-  let orderCb = 0;
-  
-  // 1. อัปเดต Orders
-  const orderVals = orderSheet.getDataRange().getValues();
-  for (let i = 1; i < orderVals.length; i++) {
-    if (orderVals[i][0] == data.id) {
-      customerLineId = orderVals[i][2];
-      orderCb = Number(orderVals[i][7]) || 0;
-      orderSheet.getRange(i + 1, 9).setValue('Done');
-      orderSheet.getRange(i + 1, 11).setValue(data.bp); // บันทึกแต้มที่ได้ในใบงาน
-      break;
-    }
-  }
-  
-  // 2. สะสมคะแนนให้สมาชิก
-  const memberVals = memberSheet.getDataRange().getValues();
-  let found = false;
-  for (let j = 1; j < memberVals.length; j++) {
-    if (memberVals[j][0] == customerLineId) {
-      let currentAccCb = Number(memberVals[j][2]) || 0;
-      let currentBp = Number(memberVals[j][3]) || 0;
-      memberSheet.getRange(j + 1, 3).setValue(currentAccCb + orderCb);
-      memberSheet.getRange(j + 1, 4).setValue(currentBp + Number(data.bp));
-      found = true; break;
-    }
-  }
-  if (!found) memberSheet.appendRow([customerLineId, "New Member", orderCb, data.bp, data.bp, "Customer"]);
-  
-  return {status: "success"};
-}
-
-function getUserStats(lineId) {
+function getUserStats(lineId, name, pic) {
   const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('Members');
   const data = sheet.getDataRange().getValues();
   for (let i = 1; i < data.length; i++) {
     if (data[i][0] == lineId) {
-      return { accCb: data[i][2], currentBp: data[i][3], role: data[i][5] };
+      return { name: data[i][1], accCb: data[i][2], currentBp: data[i][3], totalEarnedBp: data[i][4], role: data[i][5] };
     }
   }
-  return { accCb: 0, currentBp: 0, role: "User" };
+  // ถ้าไม่เจอ ให้ลงทะเบียนใหม่
+  sheet.appendRow([lineId, name, 0, 0, 0, 'User', pic]);
+  return { name: name, accCb: 0, currentBp: 0, totalEarnedBp: 0, role: 'User' };
 }
 
-function deleteOrder(id) {
+function submitOrder(d) {
   const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('Orders');
-  const data = sheet.getDataRange().getValues();
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][0] == id) {
-      sheet.deleteRow(i + 1);
-      return {status: "success"};
+  sheet.appendRow(["ORD-"+new Date().getTime(), new Date(), d.lineId, d.name, d.title, d.detail, d.type, d.baseCb, "Pending", "B", 0]);
+  return {status: "success", message: "สั่งเมนูงานเรียบร้อย!"};
+}
+
+function finishOrder(d) {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const orderSheet = ss.getSheetByName('Orders');
+  const memberSheet = ss.getSheetByName('Members');
+  const orders = orderSheet.getDataRange().getValues();
+  
+  for (let i = 1; i < orders.length; i++) {
+    if (orders[i][0] == d.id) {
+      const customerId = orders[i][2];
+      const cbValue = Number(orders[i][7]);
+      orderSheet.getRange(i+1, 9).setValue("Done");
+      orderSheet.getRange(i+1, 11).setValue(d.bp);
+      
+      // อัปเดต Member
+      const members = memberSheet.getDataRange().getValues();
+      for (let j = 1; j < members.length; j++) {
+        if (members[j][0] == customerId) {
+          memberSheet.getRange(j+1, 3).setValue(Number(members[j][2]) + cbValue);
+          memberSheet.getRange(j+1, 4).setValue(Number(members[j][3]) + Number(d.bp));
+          memberSheet.getRange(j+1, 5).setValue(Number(members[j][4]) + Number(d.bp));
+          break;
+        }
+      }
+      break;
     }
   }
+  return {status: "success"};
+}
+
+function deleteRowItem(tab, id) {
+  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(tab);
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] == id) { sheet.deleteRow(i + 1); break; }
+  }
+  return {status: "success"};
+}
+
+function saveConfig(d) {
+  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('Config');
+  sheet.appendRow(["CFG-"+new Date().getTime(), d.category, d.cb, ""]);
+  return {status: "success"};
+}
+
+function saveReward(d) {
+  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('Rewards');
+  sheet.appendRow(["RW-"+new Date().getTime(), d.name, d.points, 99, "Active"]);
+  return {status: "success"};
 }

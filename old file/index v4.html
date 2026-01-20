@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chayagorn Kitchen</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap');
+    body { font-family: 'Kanit', sans-serif; background-color: #f3f4f6; }
+    .active-tab { border-bottom: 4px solid #f59e0b; color: #f59e0b; font-weight: bold; }
+    .stat-card { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+    /* สไตล์ปุ่มแบบกดแล้วยุบ */
+    button:active { transform: scale(0.95); transition: 0.1s; }
+  </style>
+</head>
+<body class="min-h-screen">
+
+  <div class="max-w-2xl mx-auto pb-24">
+    <header class="bg-gradient-to-r from-yellow-500 to-orange-600 p-6 text-white text-center shadow-lg rounded-b-3xl mb-4">
+      <h1 class="text-3xl font-bold uppercase tracking-tighter">Chayagorn Kitchen</h1>
+      <p class="text-sm opacity-90">ระบบบริหาร Bandwidth & จิตพิสัย</p>
+    </header>
+
+    <nav class="bg-white shadow-md sticky top-0 z-10 flex justify-around p-2 mb-4 rounded-xl mx-4">
+      <button onclick="showTab('customer')" id="tab-customer" class="flex-1 py-2 active-tab">ลูกค้า</button>
+      <button onclick="showTab('chef')" id="tab-chef" class="flex-1 py-2">งานเชฟ</button>
+      <button onclick="showTab('admin')" id="tab-admin" class="flex-1 py-2">จัดการ</button>
+    </nav>
+
+    <div id="page-customer" class="p-4">
+      <div class="stat-card p-5 rounded-2xl shadow-lg text-white mb-6">
+        <div class="flex justify-between items-start mb-4">
+          <div>
+            <p class="text-[10px] opacity-80 uppercase font-bold tracking-widest">ยินดีต้อนรับ</p>
+            <h3 class="text-xl font-bold" id="display-name">Loading...</h3>
+          </div>
+          <span class="text-[10px] bg-white bg-opacity-20 px-3 py-1 rounded-full font-bold" id="display-role">ROLE</span>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="bg-black bg-opacity-10 p-3 rounded-xl">
+            <p class="text-[10px] opacity-70 uppercase">BP คงเหลือ (Current)</p>
+            <h4 class="text-2xl font-black" id="display-bp">0</h4>
+          </div>
+          <div class="bg-black bg-opacity-10 p-3 rounded-xl">
+            <p class="text-[10px] opacity-70 uppercase">BP สะสมทั้งหมด</p>
+            <h4 class="text-2xl font-black" id="display-total-bp">0</h4>
+          </div>
+        </div>
+        <div class="mt-4 flex justify-between items-center px-1">
+          <p class="text-[10px] opacity-80 uppercase">พลังงานสะสม (Acc. CB)</p>
+          <p class="text-sm font-bold" id="display-cb">0 UNIT</p>
+        </div>
+      </div>
+
+      <div class="bg-white p-6 rounded-2xl shadow-xl border border-gray-100">
+        <h2 class="text-xl font-bold mb-6 flex items-center gap-2">📋 สั่งเมนูงานใหม่</h2>
+        <div class="space-y-4">
+          <input id="jobTitle" type="text" placeholder="ชื่อโครงการ/ชิ้นงาน" class="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-yellow-400">
+          <textarea id="jobDetail" placeholder="บรีฟงานสั้นๆ..." class="w-full p-3 border rounded-xl h-24 outline-none focus:ring-2 focus:ring-yellow-400"></textarea>
+          <select id="jobType" class="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-yellow-400" onchange="updateEstCB()">
+             <option value="">เลือกประเภทงาน...</option>
+          </select>
+          <div class="bg-yellow-50 p-4 rounded-xl flex justify-between items-center border border-yellow-100">
+             <span class="text-yellow-800 font-semibold">น้ำหนักงานโดยประมาณ:</span>
+             <span class="text-2xl font-black text-yellow-600"><span id="estCBDisplay">0</span> <small class="text-xs">CB</small></span>
+          </div>
+          <button onclick="submitOrder()" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white p-4 rounded-xl font-bold text-lg shadow-lg transition-all">ส่งออเดอร์เข้าครัว</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="page-chef" class="p-4 hidden">
+      <div class="bg-white p-3 rounded-2xl shadow-sm mb-4 flex flex-wrap gap-2 items-center justify-between border border-gray-100">
+        <div class="flex gap-2">
+          <button onclick="filterOrders('ALL')" class="text-[10px] px-3 py-1 bg-gray-100 rounded-full font-bold">ทั้งหมด</button>
+          <button onclick="filterOrders('Pending')" class="text-[10px] px-3 py-1 bg-yellow-100 text-yellow-600 rounded-full font-bold">รอคิว</button>
+          <button onclick="filterOrders('Done')" class="text-[10px] px-3 py-1 bg-green-100 text-green-600 rounded-full font-bold">เสร็จแล้ว</button>
+        </div>
+        <select onchange="sortOrders(this.value)" class="text-[10px] font-bold border rounded-lg p-1 outline-none bg-gray-50">
+          <option value="priority">เรียงตาม Priority (A-E)</option>
+          <option value="newest">งานใหม่ล่าสุด</option>
+          <option value="cb">เรียงตามความยาก (CB)</option>
+        </select>
+      </div>
+      <div id="order-list" class="space-y-4"></div>
+    </div>
+
+    <div id="page-admin" class="p-4 hidden text-sm">
+        <div class="bg-white p-5 rounded-2xl shadow-md border-t-4 border-yellow-500 mb-6">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="font-bold text-gray-700">⚙️ ตั้งค่าประเภทงาน (CB)</h3>
+              <button onclick="openConfigModal()" class="bg-yellow-500 text-white px-4 py-1 rounded-full text-xs font-bold">+ เพิ่ม</button>
+            </div>
+            <div id="config-list" class="space-y-2"></div>
+        </div>
+        <div class="bg-white p-5 rounded-2xl shadow-md border-t-4 border-green-500">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="font-bold text-gray-700">🎁 ของรางวัล (BP)</h3>
+              <button onclick="openRewardModal()" class="bg-green-500 text-white px-4 py-1 rounded-full text-xs font-bold">+ เพิ่ม</button>
+            </div>
+            <div id="reward-list" class="space-y-2"></div>
+        </div>
+    </div>
+  </div>
+
+  <script>
+    let currentOrders = [];
+    const userId = "USER-CHAYAGORN"; // จำลอง Line ID สำหรับทดสอบ
+
+    window.onload = function() { 
+      loadConfig(); 
+      loadOrders(); 
+      loadUserStats();
+      loadRewards();
+    };
+
+    function showTab(tab) {
+      ['customer', 'chef', 'admin'].forEach(t => {
+        document.getElementById('page-' + t).classList.add('hidden');
+        document.getElementById('tab-' + t).classList.remove('active-tab');
+      });
+      document.getElementById('page-' + tab).classList.remove('hidden');
+      document.getElementById('tab-' + tab).classList.add('active-tab');
+      if(tab === 'chef') loadOrders();
+      if(tab === 'customer') loadUserStats();
+    }
+
+    // --- ดึงข้อมูลจาก Sheet "Members" ---
+    function loadUserStats() {
+      google.script.run.withSuccessHandler(stats => {
+        document.getElementById('display-name').innerText = stats.name || "ไม่ระบุชื่อ";
+        document.getElementById('display-bp').innerText = stats.currentBp;
+        document.getElementById('display-total-bp').innerText = stats.totalEarnedBp;
+        document.getElementById('display-cb').innerText = stats.accCb + " UNIT";
+        document.getElementById('display-role').innerText = stats.role;
+      }).getUserStats(userId);
+    }
+
+    // --- จัดการงาน (Chef) ---
+    function loadOrders() {
+      const list = document.getElementById('order-list');
+      list.innerHTML = '<p class="text-center py-10 text-gray-400 italic">กำลังเช็ครายการกบ...</p>';
+      google.script.run.withSuccessHandler(orders => {
+        currentOrders = orders;
+        renderOrders(orders);
+      }).getAllOrders();
+    }
+
+    function renderOrders(orders) {
+      const list = document.getElementById('order-list');
+      if (!orders || orders.length === 0) {
+        list.innerHTML = '<div class="bg-white p-10 rounded-2xl text-center text-gray-400">ไม่มีงานค้าง</div>';
+        return;
+      }
+      list.innerHTML = orders.map(o => `
+        <div class="bg-white p-5 rounded-2xl shadow-md border-l-8 ${getPrioColor(o.priority)} mb-4">
+          <div class="flex justify-between items-start">
+            <div class="flex-1">
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${getPrioBadge(o.priority)}">RANK ${o.priority}</span>
+              <span class="text-[10px] text-gray-400 ml-2 uppercase font-bold">${o.status}</span>
+              <h4 class="font-bold text-gray-800 text-lg mt-1">${o.title}</h4>
+              <p class="text-xs text-gray-400 mt-1">${o.customer} • ${o.type}</p>
+            </div>
+            <div class="ml-4 text-center bg-gray-50 p-3 rounded-xl border min-w-[70px]">
+              <span class="block text-2xl font-black text-gray-700">${o.cb}</span>
+              <span class="text-[10px] text-gray-400 font-bold uppercase italic">CB</span>
+            </div>
+          </div>
+          <div class="mt-4 pt-4 border-t flex justify-end gap-2">
+             ${o.status !== 'Done' ? `<button onclick="finishOrderModal('${encodeURIComponent(JSON.stringify(o))}')" class="bg-green-500 text-white text-xs px-3 py-2 rounded-lg font-bold">จบงาน</button>` : ''}
+             <button onclick="editOrderModal('${encodeURIComponent(JSON.stringify(o))}')" class="bg-blue-500 text-white text-xs px-3 py-2 rounded-lg font-bold">แก้ไข</button>
+             <button onclick="deleteOrder('${o.id}')" class="bg-red-400 text-white text-xs px-3 py-2 rounded-lg font-bold">ลบ</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // --- ฟังก์ชันจบงาน (Finish Work) ---
+    function finishOrderModal(encoded) {
+      const o = JSON.parse(decodeURIComponent(encoded));
+      Swal.fire({
+        title: 'ประเมิน BP',
+        html: `<div class="text-left"><p class="text-xs text-gray-500 mb-2">งาน: ${o.title}</p><label class="text-xs font-bold text-gray-400">ให้คะแนน BP สำหรับงานนี้</label><input id="eval-bp" type="number" class="swal2-input !m-0 !w-full" value="${o.cb * 2}"></div>`,
+        showCancelButton: true,
+        confirmButtonText: 'ยืนยันจบงาน',
+        confirmButtonColor: '#10b981',
+        preConfirm: () => ({ id: o.id, bp: document.getElementById('eval-bp').value })
+      }).then(r => { 
+        if(r.isConfirmed) {
+          Swal.showLoading();
+          google.script.run.withSuccessHandler(res => { Swal.fire('จบงานแล้ว!', res, 'success'); loadOrders(); loadUserStats(); }).finishOrder(r.value);
+        }
+      });
+    }
+
+    function editOrderModal(encoded) {
+      const o = JSON.parse(decodeURIComponent(encoded));
+      Swal.fire({
+        title: 'แก้ไขงาน',
+        html: `<div class="text-left space-y-4">
+          <input id="s-title" class="swal2-input !m-0 !w-full" value="${o.title}">
+          <div class="grid grid-cols-2 gap-2">
+            <select id="s-prio" class="swal2-input !m-0 !w-full">
+              <option value="A" ${o.priority=='A'?'selected':''}>A (Big Frog)</option>
+              <option value="B" ${o.priority=='B'?'selected':''}>B (Tadpole)</option>
+              <option value="C" ${o.priority=='C'?'selected':''}>C (Normal)</option>
+              <option value="D" ${o.priority=='D'?'selected':''}>D (Low)</option>
+              <option value="E" ${o.priority=='E'?'selected':''}>E (Backlog)</option>
+            </select>
+            <select id="s-status" class="swal2-input !m-0 !w-full">
+              <option value="Pending" ${o.status=='Pending'?'selected':''}>Pending</option>
+              <option value="Done" ${o.status=='Done'?'selected':''}>Done</option>
+            </select>
+          </div>
+          <input id="s-cb" type="number" class="swal2-input !m-0 !w-full" value="${o.cb}">
+        </div>`,
+        preConfirm: () => ({ id: o.id, title: document.getElementById('s-title').value, priority: document.getElementById('s-prio').value, cb: parseInt(document.getElementById('s-cb').value), status: document.getElementById('s-status').value, type: o.type })
+      }).then(r => { if(r.isConfirmed) google.script.run.withSuccessHandler(res => { Swal.fire('บันทึกแล้ว', res, 'success'); loadOrders(); }).updateOrder(r.value); });
+    }
+
+    // --- Helper Functions ---
+    function filterOrders(status) {
+      if (status === 'ALL') return renderOrders(currentOrders);
+      renderOrders(currentOrders.filter(o => o.status === status));
+    }
+
+    function sortOrders(criteria) {
+      let sorted = [...currentOrders];
+      const pOrder = { 'A': 1, 'B': 2, 'C': 3, 'D': 4, 'E': 5 };
+      if (criteria === 'priority') sorted.sort((a, b) => (pOrder[a.priority] || 9) - (pOrder[b.priority] || 9));
+      else if (criteria === 'newest') sorted.reverse();
+      else if (criteria === 'cb') sorted.sort((a, b) => b.cb - a.cb);
+      renderOrders(sorted);
+    }
+
+    function getPrioColor(p) { return { 'A': 'border-red-500', 'B': 'border-yellow-500', 'C': 'border-green-500', 'D': 'border-blue-400', 'E': 'border-gray-400' }[p] || 'border-gray-200'; }
+    function getPrioBadge(p) { 
+      const colors = { 'A': 'bg-red-100 text-red-600', 'B': 'bg-yellow-100 text-yellow-600', 'C': 'bg-green-100 text-green-600', 'D': 'bg-blue-100 text-blue-600', 'E': 'bg-gray-100 text-gray-500' };
+      return colors[p] || 'bg-gray-100';
+    }
+
+    function updateEstCB() {
+      const select = document.getElementById('jobType');
+      document.getElementById('estCBDisplay').innerText = select.options[select.selectedIndex]?.dataset.cb || 0;
+    }
+
+    function submitOrder() {
+      const title = document.getElementById('jobTitle').value;
+      const type = document.getElementById('jobType').value;
+      if (!title || !type) { Swal.fire('ข้อมูลไม่ครบ', '', 'warning'); return; }
+      Swal.showLoading();
+      google.script.run.withSuccessHandler(res => {
+        Swal.fire('สำเร็จ!', res, 'success');
+        document.getElementById('jobTitle').value = "";
+        loadOrders(); loadUserStats();
+      }).submitOrder({lineId: userId, name: "ชยกร (Chef)", title, detail: document.getElementById('jobDetail').value, type, baseCb: parseInt(document.getElementById('estCBDisplay').innerText)});
+    }
+
+    function deleteOrder(id) {
+      Swal.fire({ title: 'ลบทิ้ง?', icon: 'warning', showCancelButton: true }).then(r => { if(r.isConfirmed) google.script.run.withSuccessHandler(() => { loadOrders(); }).deleteOrder(id); });
+    }
+
+    function loadConfig() {
+      google.script.run.withSuccessHandler(data => {
+        document.getElementById('jobType').innerHTML = '<option value="">เลือกประเภทงาน...</option>' + data.map(i => `<option value="${i.category}" data-cb="${i.cb}">${i.category}</option>`).join('');
+        document.getElementById('config-list').innerHTML = data.map(i => `<div class="flex justify-between items-center bg-gray-50 p-3 rounded-xl"><span>${i.category} <b>(${i.cb} CB)</b></span><button onclick="deleteItem('Config','${i.id}')" class="text-red-400">ลบ</button></div>`).join('');
+      }).getConfigData();
+    }
+
+    function loadRewards() {
+      google.script.run.withSuccessHandler(data => {
+        document.getElementById('reward-list').innerHTML = data.map(i => `<div class="flex justify-between items-center bg-gray-50 p-3 rounded-xl"><span>${i.name} <b>(${i.points} BP)</b></span><button onclick="deleteItem('Rewards','${i.id}')" class="text-red-400">ลบ</button></div>`).join('');
+      }).getRewardsData();
+    }
+
+    function deleteItem(tab, id) { google.script.run.withSuccessHandler(() => { tab === 'Config' ? loadConfig() : loadRewards(); }).deleteRowItem(tab, id); }
+    function openConfigModal() { Swal.fire({ title: 'เพิ่มประเภท', html: '<input id="c-cat" class="swal2-input" placeholder="ชื่อ"><input id="c-cb" type="number" class="swal2-input" placeholder="CB">', preConfirm: () => ({ category: document.getElementById('c-cat').value, cb: parseInt(document.getElementById('c-cb').value) }) }).then(r => { if(r.value) google.script.run.withSuccessHandler(loadConfig).saveConfig(r.value); }); }
+    function openRewardModal() { Swal.fire({ title: 'เพิ่มรางวัล', html: '<input id="r-nm" class="swal2-input" placeholder="ชื่อ"><input id="r-bp" type="number" class="swal2-input" placeholder="BP">', preConfirm: () => ({ name: document.getElementById('r-nm').value, points: parseInt(document.getElementById('r-bp').value) }) }).then(r => { if(r.value) google.script.run.withSuccessHandler(loadRewards).saveReward(r.value); }); }
+  </script>
+</body>
+</html>
