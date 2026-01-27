@@ -10,17 +10,34 @@ function doGet(e) {
     const data = getTableData('Orders');
     return jsonResponse(data);
   } catch (err) {
-    return jsonResponse({status: "error", message: err.toString()});
+    Logger.log('Error in doGet: ' + err.toString()); // ✅ เก็บไว้ในล็อก
+    return jsonResponse({status: "error", message: "An error occurred. Please try again."}); // ✅ แสดงข้อความทั่วไป
   }
 }
 
 function doPost(e) {
   const data = JSON.parse(e.postData.contents);
   const action = data.action;
+
+  // ✅ ตรวจสอบสิทธิ์ทุกครั้ง
+  const userRole = getUserRole(data.lineId);
+  
+  if (action === 'updateOrder' || action === 'finishOrder' || action === 'deleteOrder') {
+    if (userRole !== 'Chef' && userRole !== 'Head Chef') {
+      return jsonResponse({status: "error", message: "Unauthorized: Chef role required"});
+    }
+  }
+  
+  if (action === 'saveConfig') {
+    if (userRole !== 'Head Chef') {
+      return jsonResponse({status: "error", message: "Unauthorized: Head Chef role required"});
+    }
+  }
+  
   if (action === 'submitOrder') return jsonResponse(submitOrder(data));
   if (action === 'finishOrder') return jsonResponse(finishOrder(data));
   if (action === 'updateOrder') return jsonResponse(updateOrder(data));
-  if (action === 'deleteOrder') return jsonResponse(deleteRowItem(data.tab, data.id));
+  if (action === 'deleteOrder') return jsonResponse(deleteRowItem(data.tab, data.id, data.lineId, userRole));
   if (action === 'saveConfig') return jsonResponse(saveConfig(data));
   return jsonResponse({status: "error", message: "No action found"});
 }
@@ -48,11 +65,28 @@ function getUserStats(lineId, name, pic) {
 
 function submitOrder(d) {
   try {
-    if (!d.title || !d.type || d.baseCb <= 0) {
-      return {status: "error", message: "Invalid input data"};
+    // ✅ Validate ทุกฟิลด์
+    if (!d.lineId || typeof d.lineId !== 'string') {
+      return {status: "error", message: "Invalid lineId"};
     }
+    
+    if (!d.title || typeof d.title !== 'string' || d.title.length > 200) {
+      return {status: "error", message: "Title must be 1-200 characters"};
+    }
+    
+    if (!d.type || typeof d.type !== 'string' || d.type.length > 100) {
+      return {status: "error", message: "Invalid type"};
+    }
+    
+    const baseCb = Number(d.baseCb);
+    if (isNaN(baseCb) || baseCb <= 0 || baseCb > 10000) {
+      return {status: "error", message: "Base CB must be between 1-10000"};
+    }
+    
+    const detail = String(d.detail || '').substring(0, 1000); // จำกัดความยาว
+    
     const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('Orders');
-    sheet.appendRow(["ORD-"+new Date().getTime(), new Date(), d.lineId, d.name, d.title, d.detail, d.type, d.baseCb, "Pending", "B", 0]);
+    sheet.appendRow(["ORD-"+new Date().getTime(), new Date(), d.lineId, d.name, d.title, detail, d.type, baseCb, "Pending", "B", 0]);
     Logger.log('Order submitted: ' + d.title);
     return {status: "success", message: "สั่งเมนูงานเรียบร้อย!"};
   } catch (e) {
@@ -120,11 +154,23 @@ function getDashboardData() {
   return stats;
 }
 
-function deleteRowItem(tab, id) {
+function deleteRowItem(tab, id, requestorLineId, requestorRole) {
   const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(tab);
   const data = sheet.getDataRange().getValues();
   for (let i = 1; i < data.length; i++) {
-    if (data[i][0] == id) { sheet.deleteRow(i + 1); break; }
+    if (data[i][0] == id) {
+      // ✅ ตรวจสอบความเป็นเจ้าของ
+      const orderOwnerId = data[i][2]; // column C: lineId
+      
+      if (requestorRole !== 'Chef' && requestorRole !== 'Head Chef') {
+        if (orderOwnerId !== requestorLineId) {
+          return {status: "error", message: "You can only delete your own orders"};
+        }
+      }
+      
+      sheet.deleteRow(i + 1);
+      return {status: "success"};
+    }
   }
   return {status: "success"};
 }
@@ -133,4 +179,13 @@ function saveConfig(d) {
   const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('Config');
   sheet.appendRow(["CFG-"+new Date().getTime(), d.category, d.cb, ""]);
   return {status: "success"};
+}
+
+function getUserRole(lineId) {
+  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('Members');
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] == lineId) return data[i][5];
+  }
+  return 'User';
 }
