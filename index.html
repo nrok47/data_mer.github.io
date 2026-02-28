@@ -14,6 +14,56 @@
     .stat-card { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
     .chart-bar { transition: width 1s ease-in-out; }
     .filter-btn-active { background-color: #f59e0b; color: white; border-color: #f59e0b; }
+    
+    /* Loading animations */
+    .skeleton {
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: loading 1.5s infinite;
+    }
+    
+    @keyframes loading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    
+    .skeleton-text {
+      height: 1rem;
+      border-radius: 0.25rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .skeleton-title {
+      height: 1.5rem;
+      border-radius: 0.375rem;
+      margin-bottom: 0.75rem;
+    }
+    
+    /* Mobile responsiveness */
+    @media (max-width: 640px) {
+      .order-card {
+        padding: 1rem !important;
+        margin: 0.5rem 0 !important;
+      }
+      
+      .stat-card {
+        padding: 1rem !important;
+      }
+      
+      .filter-btn {
+        font-size: 0.75rem !important;
+        padding: 0.5rem 0.75rem !important;
+      }
+      
+      header h1 {
+        font-size: 1.5rem !important;
+      }
+      
+      nav button {
+        font-size: 0.75rem !important;
+        padding: 0.5rem !important;
+      }
+    }
   </style>
 </head>
 <body class="pb-20">
@@ -62,20 +112,60 @@
 
     <div id="page-chef" class="p-4 hidden">
       <div class="bg-white p-4 rounded-2xl shadow-sm mb-4 space-y-3 border border-gray-100">
+        <!-- Status Filters -->
         <div class="flex flex-wrap gap-2">
           <button onclick="filterOrders('All')" class="filter-btn text-[10px] px-3 py-1.5 rounded-full border filter-btn-active font-bold">ทั้งหมด</button>
-          <button onclick="filterOrders('Pending')" class="filter-btn text-[10px] px-3 py-1.5 rounded-full border bg-white font-bold">รอคิว</button>
-          <button onclick="filterOrders('Doing')" class="filter-btn text-[10px] px-3 py-1.5 rounded-full border bg-white font-bold">กำลังทำ</button>
-          <button onclick="filterOrders('Done')" class="filter-btn text-[10px] px-3 py-1.5 rounded-full border bg-white font-bold">เสร็จแล้ว</button>
+          <button onclick="filterOrders('Pending')" class="filter-btn text-[10px] px-3 py-1.5 rounded-full border bg-white font-bold">🟡 รอคิว</button>
+          <button onclick="filterOrders('Doing')" class="filter-btn text-[10px] px-3 py-1.5 rounded-full border bg-white font-bold">🔵 กำลังทำ</button>
+          <button onclick="filterOrders('Done')" class="filter-btn text-[10px] px-3 py-1.5 rounded-full border bg-white font-bold">🟢 เสร็จแล้ว</button>
         </div>
-        <div class="flex justify-between items-center pt-2 border-t">
-          <span class="text-[10px] font-bold text-gray-400 uppercase">เรียงลำดับ:</span>
-          <select onchange="sortOrders(this.value)" class="text-[11px] bg-gray-50 border rounded-lg px-2 py-1 outline-none font-bold">
-            <option value="date-desc">ล่าสุดไปเก่าสุด</option>
-            <option value="date-asc">เก่าสุดไปล่าสุด</option>
-            <option value="rank-asc">กบใหญ่ไปกบเล็ก (A -> E)</option>
-            <option value="cb-desc">งานหนักไปงานเบา</option>
-          </select>
+        
+        <!-- Enhanced Sorting Options -->
+        <div class="grid grid-cols-2 gap-2 pt-2 border-t">
+          <div>
+            <span class="text-[10px] font-bold text-gray-400 uppercase block mb-1">เรียงลำดับ:</span>
+            <select onchange="sortOrders(this.value)" class="text-[11px] bg-gray-50 border rounded-lg px-2 py-1 outline-none font-bold w-full">
+              <option value="date-desc">📅 ล่าสุดไปเก่าสุด</option>
+              <option value="date-asc">📅 เก่าสุดไปล่าสุด</option>
+              <option value="rank-asc">🐸 กบใหญ่ไปกบเล็ก (A -> E)</option>
+              <option value="rank-desc">🐸 กบเล็กไปกบใหญ่ (E -> A)</option>
+              <option value="cb-desc">⚖️ งานหนักไปงานเบา</option>
+              <option value="cb-asc">⚖️ งานเบาไปงานหนัก</option>
+              <option value="name-asc">👤 ชื่อ A-Z</option>
+              <option value="name-desc">👤 ชื่อ Z-A</option>
+            </select>
+          </div>
+          
+          <!-- Quick Filters for Chef -->
+          <div>
+            <span class="text-[10px] font-bold text-gray-400 uppercase block mb-1">กรองด่วน:</span>
+            <select onchange="quickFilter(this.value)" class="text-[11px] bg-orange-50 border border-orange-200 rounded-lg px-2 py-1 outline-none font-bold w-full">
+              <option value="">ทุกออเดอร์</option>
+              <option value="my-today">🔥 งานของฉันวันนี้</option>
+              <option value="urgent">🚨 ด่วน (Rank A+B)</option>
+              <option value="high-cb">💪 งานหนัก (CB>50)</option>
+              <option value="overdue">⏰ เลยกำหนด</option>
+              <option value="no-chef">👥 ยังไม่มีเชฟรับผิดชอบ</option>
+            </select>
+          </div>
+        </div>
+        
+        <!-- Workload Summary -->
+        <div class="bg-gradient-to-r from-blue-50 to-purple-50 p-3 rounded-lg border border-blue-200">
+          <div class="grid grid-cols-3 gap-2 text-center">
+            <div>
+              <p class="text-[10px] text-blue-600 font-bold uppercase">รอคิว</p>
+              <p class="text-lg font-black text-blue-700" id="pending-count">0</p>
+            </div>
+            <div>
+              <p class="text-[10px] text-purple-600 font-bold uppercase">กำลังทำ</p>
+              <p class="text-lg font-black text-purple-700" id="doing-count">0</p>
+            </div>
+            <div>
+              <p class="text-[10px] text-green-600 font-bold uppercase">วันนี้</p>
+              <p class="text-lg font-black text-green-700" id="today-count">0</p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -105,6 +195,15 @@
           </div>
           <div id="config-list" class="space-y-2 text-sm"></div>
         </div>
+        
+        <!-- User Management Section (Head Chef only) -->
+        <div id="user-management-section" class="bg-white p-5 rounded-2xl shadow-md border-t-4 border-purple-500 hidden">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="font-bold">👥 จัดการผู้ใช้ (User Management)</h3>
+            <button onclick="refreshUsers()" class="bg-purple-500 text-white px-4 py-1 rounded-full text-xs font-bold">🔄 รีเฟรช</button>
+          </div>
+          <div id="user-list" class="space-y-2 text-sm"></div>
+        </div>
     </div>
   </div>
 
@@ -112,11 +211,118 @@
     const LIFF_ID = '2008904245-TsV7LL73';
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbxrQZ_68y9BQmGMdIZo5PF6RnePN-7BgV8bc5gSbfXSusjQwdDywBqejyXXwbbgm2JXKA/exec';
     
+    // Loading and utility functions
+    function showSkeletonLoader(containerId, count = 3) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = Array(count).fill(0).map(() => `
+        <div class="bg-white p-5 rounded-2xl shadow-sm mb-4">
+          <div class="skeleton skeleton-title w-3/4"></div>
+          <div class="skeleton skeleton-text w-1/2"></div>
+          <div class="skeleton skeleton-text w-full"></div>
+        </div>
+      `).join('');
+    }
+    
+    function showLoadingSpinner(containerId, message = 'กำลังโหลด...') {
+      const container = document.getElementById(containerId);
+      container.innerHTML = `
+        <div class="text-center py-10">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500 mx-auto mb-2"></div>
+          <p class="text-gray-400">${message}</p>
+        </div>
+      `;
+    }
+    
+    function showError(containerId, message = 'เกิดข้อผิดพลาด') {
+      const container = document.getElementById(containerId);
+      container.innerHTML = `
+        <div class="text-center py-10">
+          <div class="text-red-400 mb-2">
+            <svg class="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <p class="text-red-400">${message}</p>
+          <button onclick="location.reload()" class="mt-2 px-4 py-2 bg-red-500 text-white rounded-lg text-sm">ลองใหม่</button>
+        </div>
+      `;
+    }
+    
+    // Performance utilities
+    function debounce(func, wait) {
+      let timeout;
+      return function executedFunction(...args) {
+        const later = () => {
+          clearTimeout(timeout);
+          func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+      };
+    }
+    
+    // Error boundary
+    window.addEventListener('error', (event) => {
+      console.error('Global error:', event.error);
+      Swal.fire({
+        icon: 'error',
+        title: 'เกิดข้อผิดพลาด',
+        text: 'กรุณารีเฟรชหน้าและลองใหม่',
+        confirmButtonColor: '#f59e0b'
+      });
+    });
+    
+    // Network error handling
+    window.addEventListener('unhandledrejection', (event) => {
+      console.error('Unhandled promise rejection:', event.reason);
+      Swal.fire({
+        icon: 'warning',
+        title: 'การเชื่อมต่อมีปัญหา',
+        text: 'กรุณาตรวจสอบอินเทอร์เน็ตและลองใหม่',
+        confirmButtonColor: '#f59e0b'
+      });
+    });
+    
+    async function fetchWithErrorHandling(url, options = {}) {
+      try {
+        const response = await fetch(url, options);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return await response.json();
+      } catch (error) {
+        console.error('Fetch error:', error);
+        throw error;
+      }
+    }
+    
     let currentUser = {};
     let allOrders = [];
     let currentFilter = 'All';
     let currentSort = 'date-desc';
+    let currentQuickFilter = '';
+    let pollingInterval = null;
 
+    // Real-time updates
+    function startRealTimeUpdates() {
+      if (pollingInterval) clearInterval(pollingInterval);
+      pollingInterval = setInterval(async () => {
+        try {
+          await fetchOrders();
+        } catch (err) {
+          console.error('Polling error:', err);
+        }
+      }, 30000); // ทุก 30 วินาที
+    }
+    
+    function stopRealTimeUpdates() {
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+        pollingInterval = null;
+      }
+    }
+    
+    // Initialize with real-time updates
     async function init() {
       await liff.init({ liffId: LIFF_ID });
       if (!liff.isLoggedIn()) { liff.login(); return; }
@@ -126,25 +332,44 @@
       await loadUserStats();
       loadConfig();
       fetchOrders();
+      startRealTimeUpdates();
     }
+    
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+      stopRealTimeUpdates();
+    });
 
     async function loadUserStats() {
-      const res = await fetch(`${GAS_URL}?action=getStats&lineId=${currentUser.userId}&name=${encodeURIComponent(currentUser.displayName)}&pictureUrl=${encodeURIComponent(currentUser.pictureUrl)}`);
-      const s = await res.json();
-      document.getElementById('display-name').innerText = s.name;
-      document.getElementById('display-bp').innerText = s.currentBp;
-      document.getElementById('display-cb').innerText = s.accCb;
-      document.getElementById('display-role').innerText = s.role;
-      currentUser.role = s.role;
-      if (s.role === 'Head Chef') {
-        document.getElementById('dashboard-section').classList.remove('hidden');
-        loadDashboard();
+      showLoadingSpinner('display-name', 'กำลังโหลดข้อมูล...');
+      try {
+        const s = await fetchWithErrorHandling(`${GAS_URL}?action=getStats&lineId=${currentUser.userId}&name=${encodeURIComponent(currentUser.displayName)}&pictureUrl=${encodeURIComponent(currentUser.pictureUrl)}`);
+        document.getElementById('display-name').innerText = s.name;
+        document.getElementById('display-bp').innerText = s.currentBp;
+        document.getElementById('display-cb').innerText = s.accCb;
+        document.getElementById('display-role').innerText = s.role;
+        currentUser.role = s.role;
+        
+        // Show/hide sections based on role
+        if (s.role === 'Head Chef') {
+          document.getElementById('dashboard-section').classList.remove('hidden');
+          document.getElementById('user-management-section').classList.remove('hidden');
+          loadDashboard();
+          loadUsers();
+        } else {
+          document.getElementById('dashboard-section').classList.add('hidden');
+          document.getElementById('user-management-section').classList.add('hidden');
+        }
+      } catch (err) {
+        console.error('Failed to load user stats:', err);
+        document.getElementById('display-name').innerText = 'Error loading';
       }
     }
 
     async function loadDashboard() {
-        const res = await fetch(`${GAS_URL}?action=getDashboard`);
-        const data = await res.json();
+      showLoadingSpinner('user-experience-list', 'กำลังโหลดข้อมูล...');
+      try {
+        const data = await fetchWithErrorHandling(`${GAS_URL}?action=getDashboard`);
         const ratio = data.totalCb > 0 ? ((data.doneJobs / data.totalCb) * 100).toFixed(1) : 0;
         document.getElementById('ratio-job-cb').innerText = ratio;
         document.getElementById('total-finished-cb').innerText = data.totalCb;
@@ -156,18 +381,20 @@
             <div class="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden"><div class="chart-bar bg-orange-400 h-full" style="width:${(u.cb/maxCb*100)}%"></div></div>
           </div>
         `).join('');
+      } catch (err) {
+        console.error('Failed to load dashboard:', err);
+        document.getElementById('user-experience-list').innerHTML = '<p class="text-red-400 text-center">ไม่สามารถโหลดข้อมูลได้</p>';
+      }
     }
 
     async function fetchOrders() {
-      const list = document.getElementById('order-list');
-      list.innerHTML = '<div class="text-center py-10"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500 mx-auto"></div><p class="mt-2 text-gray-400">กำลังโหลด...</p></div>';
+      showSkeletonLoader('order-list', 3);
       try {
-        const res = await fetch(GAS_URL);
-        const data = await res.json();
+        const data = await fetchWithErrorHandling(GAS_URL);
         allOrders = data.slice(1);
         processAndRender();
       } catch (err) {
-        list.innerHTML = '<p class="text-center py-10 text-red-400">เกิดข้อผิดพลาดในการโหลดข้อมูล</p>';
+        showError('order-list', 'เกิดข้อผิดพลาดในการโหลดข้อมูล');
       }
     }
 
@@ -184,19 +411,91 @@
       currentSort = val;
       processAndRender();
     }
+    
+    function quickFilter(filterType) {
+      currentQuickFilter = filterType;
+      processAndRender();
+    }
+    
+    function updateWorkloadSummary() {
+      const pending = allOrders.filter(o => o[8] === 'Pending').length;
+      const doing = allOrders.filter(o => o[8] === 'Doing').length;
+      const today = allOrders.filter(o => {
+        const orderDate = new Date(o[1]).toDateString();
+        const todayDate = new Date().toDateString();
+        return orderDate === todayDate;
+      }).length;
+      
+      document.getElementById('pending-count').innerText = pending;
+      document.getElementById('doing-count').innerText = doing;
+      document.getElementById('today-count').innerText = today;
+    }
 
     function processAndRender() {
       let filtered = allOrders;
-      if (currentFilter !== 'All') filtered = allOrders.filter(o => o[8] === currentFilter);
       
+      // Apply status filter
+      if (currentFilter !== 'All') {
+        filtered = allOrders.filter(o => o[8] === currentFilter);
+      }
+      
+      // Apply quick filter
+      if (currentQuickFilter) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        switch (currentQuickFilter) {
+          case 'my-today':
+            filtered = filtered.filter(o => {
+              const orderDate = new Date(o[1]);
+              return orderDate >= today && o[8] !== 'Done';
+            });
+            break;
+          case 'urgent':
+            filtered = filtered.filter(o => o[9] === 'A' || o[9] === 'B');
+            break;
+          case 'high-cb':
+            filtered = filtered.filter(o => Number(o[7]) > 50);
+            break;
+          case 'overdue':
+            filtered = filtered.filter(o => {
+              const orderDate = new Date(o[1]);
+              const daysOld = Math.floor((today - orderDate) / (1000 * 60 * 60 * 24));
+              return daysOld > 3 && o[8] !== 'Done';
+            });
+            break;
+          case 'no-chef':
+            filtered = filtered.filter(o => o[8] === 'Pending');
+            break;
+        }
+      }
+      
+      // Apply sorting
       filtered.sort((a, b) => {
-        if (currentSort === 'date-desc') return new Date(b[1]) - new Date(a[1]);
-        if (currentSort === 'date-asc') return new Date(a[1]) - new Date(b[1]);
-        if (currentSort === 'rank-asc') return a[9].localeCompare(b[9]);
-        if (currentSort === 'cb-desc') return b[7] - a[7];
+        switch (currentSort) {
+          case 'date-desc':
+            return new Date(b[1]) - new Date(a[1]);
+          case 'date-asc':
+            return new Date(a[1]) - new Date(b[1]);
+          case 'rank-asc':
+            return a[9].localeCompare(b[9]);
+          case 'rank-desc':
+            return b[9].localeCompare(a[9]);
+          case 'cb-desc':
+            return Number(b[7]) - Number(a[7]);
+          case 'cb-asc':
+            return Number(a[7]) - Number(b[7]);
+          case 'name-asc':
+            return (a[3] || '').localeCompare(b[3] || '');
+          case 'name-desc':
+            return (b[3] || '').localeCompare(a[3] || '');
+          default:
+            return new Date(b[1]) - new Date(a[1]);
+        }
       });
 
       renderOrders(filtered);
+      updateWorkloadSummary();
     }
 
     function renderOrders(rows) {
@@ -206,6 +505,9 @@
       list.innerHTML = rows.map(o => {
         const statusColor = { 'Pending':'border-yellow-400', 'Doing':'border-blue-400', 'Done':'border-green-400', 'Cancel':'border-red-400' }[o[8]];
         const isChef = (currentUser.role === 'Chef' || currentUser.role === 'Head Chef');
+        const canFinish = hasPermission(currentUser.role, 'canFinishOrders');
+        const canEdit = hasPermission(currentUser.role, 'canEditOrders') || (o[2] === currentUser.userId && hasPermission(currentUser.role, 'canViewOwnOrders'));
+        const canDelete = hasPermission(currentUser.role, 'canDeleteOrders') || (o[2] === currentUser.userId && hasPermission(currentUser.role, 'canViewOwnOrders'));
         
         return `
           <div class="bg-white p-5 rounded-2xl shadow-sm border-l-8 ${statusColor} mb-4">
@@ -226,11 +528,16 @@
             </div>
             ${isChef ? `
               <div class="mt-4 grid grid-cols-3 gap-2">
-                <button onclick="editOrderModal('${o[0]}', '${encodeURIComponent(o[5])}', ${o[7]}, '${o[9]}', '${o[8]}')" class="bg-blue-500 text-white text-[10px] py-2 rounded-xl font-bold">1. ปรับแก้</button>
-                <button onclick="finishOrderModal('${o[0]}', ${o[7]})" class="bg-green-500 text-white text-[10px] py-2 rounded-xl font-bold ${o[8] === 'Done' ? 'opacity-30 pointer-events-none' : ''}">2. เสร็จงาน</button>
-                <button onclick="deleteItem('Orders', '${o[0]}')" class="bg-gray-100 text-gray-400 text-[10px] py-2 rounded-xl font-bold">3. ลบทิ้ง</button>
+                ${canEdit ? `<button onclick="editOrderModal('${o[0]}', '${encodeURIComponent(o[5])}', ${o[7]}, '${o[9]}', '${o[8]}')" class="bg-blue-500 text-white text-[10px] py-2 rounded-xl font-bold">1. ปรับแก้</button>` : '<div></div>'}
+                ${canFinish ? `<button onclick="finishOrderModal('${o[0]}', ${o[7]})" class="bg-green-500 text-white text-[10px] py-2 rounded-xl font-bold ${o[8] === 'Done' ? 'opacity-30 pointer-events-none' : ''}">2. เสร็จงาน</button>` : '<div></div>'}
+                ${canDelete ? `<button onclick="deleteItem('Orders', '${o[0]}')" class="bg-gray-100 text-gray-400 text-[10px] py-2 rounded-xl font-bold">3. ลบทิ้ง</button>` : '<div></div>'}
               </div>
-            ` : ''}
+            ` : (o[2] === currentUser.userId ? `
+              <div class="mt-4 grid grid-cols-2 gap-2">
+                <button onclick="editOrderModal('${o[0]}', '${encodeURIComponent(o[5])}', ${o[7]}, '${o[9]}', '${o[8]}')" class="bg-blue-500 text-white text-[10px] py-2 rounded-xl font-bold">แก้ไข</button>
+                <button onclick="deleteItem('Orders', '${o[0]}')" class="bg-red-100 text-red-400 text-[10px] py-2 rounded-xl font-bold">ลบ</button>
+              </div>
+            ` : '')}
           </div>
         `;
       }).join('');
@@ -240,49 +547,136 @@
       const { value: formValues } = await Swal.fire({
         title: 'แก้ไขรายละเอียดงาน',
         html: `
-          <div class="text-left space-y-3">
-            <textarea id="edit-detail" class="swal2-textarea !m-0 !w-full !h-20 !text-sm">${decodeURIComponent(detail)}</textarea>
-            <div class="grid grid-cols-2 gap-2">
-              <input id="edit-cb" type="number" class="swal2-input !m-0 !w-full" value="${cb}" placeholder="CB">
-              <select id="edit-prio" class="swal2-input !m-0 !w-full !text-sm">
-                <option value="A" ${priority=='A'?'selected':''}>Rank A</option>
-                <option value="B" ${priority=='B'?'selected':''}>Rank B</option>
-                <option value="C" ${priority=='C'?'selected':''}>Rank C</option>
-                <option value="D" ${priority=='D'?'selected':''}>Rank D</option>
-                <option value="E" ${priority=='E'?'selected':''}>Rank E</option>
-              </select>
+          <div class="text-left space-y-4">
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">รายละเอียดงาน</label>
+              <textarea id="edit-detail" class="swal2-textarea !m-0 !w-full !h-20 !text-sm" placeholder="บรีฟงาน...">${decodeURIComponent(detail)}</textarea>
+              <p class="text-xs text-gray-500 mt-1">รายละเอียดเพิ่มเติมเกี่ยวกับงาน (สูงสุด 1000 ตัวอักษร)</p>
             </div>
-            <select id="edit-status" class="swal2-input !m-0 !w-full !text-sm">
-              <option value="Pending" ${status=='Pending'?'selected':''}>Pending</option>
-              <option value="Doing" ${status=='Doing'?'selected':''}>Doing</option>
-              <option value="Done" ${status=='Done'?'selected':''}>Done</option>
-              <option value="Cancel" ${status=='Cancel'?'selected':''}>Cancel</option>
-            </select>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">CB (Cooking Points)</label>
+                <input id="edit-cb" type="number" class="swal2-input !m-0 !w-full" value="${cb}" placeholder="CB">
+                <p class="text-xs text-gray-500 mt-1">น้ำหนักงาน (1-10000)</p>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">ลำดับความสำคัญ</label>
+                <select id="edit-prio" class="swal2-input !m-0 !w-full !text-sm">
+                  <option value="A" ${priority=='A'?'selected':''}>Rank A (สูงสุด)</option>
+                  <option value="B" ${priority=='B'?'selected':''}>Rank B (สูง)</option>
+                  <option value="C" ${priority=='C'?'selected':''}>Rank C (ปานกลาง)</option>
+                  <option value="D" ${priority=='D'?'selected':''}>Rank D (ต่ำ)</option>
+                  <option value="E" ${priority=='E'?'selected':''}>Rank E (ต่ำสุด)</option>
+                </select>
+                <p class="text-xs text-gray-500 mt-1">A=สำคัญสูงสุด, E=สำคัญต่ำสุด</p>
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">สถานะงาน</label>
+              <select id="edit-status" class="swal2-input !m-0 !w-full !text-sm">
+                <option value="Pending" ${status=='Pending'?'selected':''}>🟡 Pending - รอคิว</option>
+                <option value="Doing" ${status=='Doing'?'selected':''}>🔵 Doing - กำลังทำ</option>
+                <option value="Done" ${status=='Done'?'selected':''}>🟢 Done - เสร็จแล้ว</option>
+                <option value="Cancel" ${status=='Cancel'?'selected':''}>🔴 Cancel - ยกเลิก</option>
+              </select>
+              <p class="text-xs text-gray-500 mt-1">อัพเดทสถานะความคืบหน้าของงาน</p>
+            </div>
+            <div class="bg-blue-50 p-3 rounded-lg border border-blue-200">
+              <p class="text-xs text-blue-800 font-medium">💡 คำแนะนำ: การเปลี่ยนสถานะเป็น "Done" จะต้องใช้ปุ่ม "เสร็จงาน" เพื่อระบุ CB/BP ที่ได้จริง</p>
+            </div>
           </div>
         `,
         showCancelButton: true,
-        confirmButtonText: 'บันทึก',
-        preConfirm: () => ({ id, detail: document.getElementById('edit-detail').value, cb: document.getElementById('edit-cb').value, priority: document.getElementById('edit-prio').value, status: document.getElementById('edit-status').value, action: 'updateOrder' })
+        confirmButtonText: 'บันทึกการแก้ไข',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#3b82f6',
+        preConfirm: () => {
+          const detail = document.getElementById('edit-detail').value;
+          const cb = document.getElementById('edit-cb').value;
+          const priority = document.getElementById('edit-prio').value;
+          const status = document.getElementById('edit-status').value;
+          
+          if (detail.length > 1000) {
+            Swal.showValidationMessage('รายละเอียดงานต้องไม่เกิน 1000 ตัวอักษร');
+            return false;
+          }
+          
+          if (!cb || cb < 0 || cb > 10000) {
+            Swal.showValidationMessage('CB ต้องอยู่ระหว่าง 0-10000');
+            return false;
+          }
+          
+          return { id, detail, cb: Number(cb), priority, status, action: 'updateOrder' };
+        }
       });
       if (formValues) {
         Swal.showLoading();
         await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(formValues) });
-        fetchOrders();
-        Swal.close();
+        Swal.fire({
+          icon: 'success',
+          title: 'แก้ไขเรียบร้อย!',
+          text: 'รายละเอียดงานได้รับการอัพเดทแล้ว',
+          confirmButtonColor: '#3b82f6'
+        }).then(() => {
+          fetchOrders();
+        });
       }
     }
 
     async function finishOrderModal(id, currentCb) {
       const { value: v } = await Swal.fire({
         title: 'ยืนยันจบงาน',
-        html: `<input id="swal-cb" type="number" class="swal2-input" value="${currentCb}" placeholder="Final CB"><input id="swal-bp" type="number" class="swal2-input" value="${currentCb * 2}" placeholder="BP">`,
+        html: `
+          <div class="text-left space-y-4">
+            <p class="text-sm text-gray-600">กรุณาระบุค่า CB และ BP ที่ได้รับจริงสำหรับงานนี้</p>
+            <div class="space-y-3">
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Final CB (Cooking Points)</label>
+                <input id="swal-cb" type="number" class="swal2-input" value="${currentCb}" placeholder="Final CB">
+                <p class="text-xs text-gray-500 mt-1">น้ำหนักงานที่ทำจริง (1-10000)</p>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">BP (Bonus Points)</label>
+                <input id="swal-bp" type="number" class="swal2-input" value="${currentCb * 2}" placeholder="BP">
+                <p class="text-xs text-gray-500 mt-1">คะแนนพิเศษสำหรับลูกค้า (0-20000)</p>
+              </div>
+            </div>
+            <div class="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
+              <p class="text-xs text-yellow-800 font-medium">💡 คำแนะนำ: CB จะเพิ่มยอดสะสมของเชฟ, BP จะเพิ่มยอดสะสมของลูกค้า</p>
+            </div>
+          </div>
+        `,
         showCancelButton: true,
-        preConfirm: () => ({ cb: document.getElementById('swal-cb').value, bp: document.getElementById('swal-bp').value })
+        confirmButtonText: 'ยืนยันการจบงาน',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#10b981',
+        preConfirm: () => {
+          const cb = document.getElementById('swal-cb').value;
+          const bp = document.getElementById('swal-bp').value;
+          
+          if (!cb || cb < 1 || cb > 10000) {
+            Swal.showValidationMessage('CB ต้องอยู่ระหว่าง 1-10000');
+            return false;
+          }
+          if (!bp || bp < 0 || bp > 20000) {
+            Swal.showValidationMessage('BP ต้องอยู่ระหว่าง 0-20000');
+            return false;
+          }
+          
+          return { cb: Number(cb), bp: Number(bp) };
+        }
       });
       if (v) {
         Swal.showLoading();
         await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'finishOrder', id, ...v }) });
-        location.reload();
+        Swal.fire({
+          icon: 'success',
+          title: 'จบงานเรียบร้อย!',
+          text: `มอบ CB ${v.cb} และ BP ${v.bp} เรียบร้อยแล้ว`,
+          confirmButtonColor: '#10b981'
+        }).then(() => {
+          location.reload();
+        });
       }
     }
 
@@ -297,11 +691,15 @@
     }
 
     async function loadConfig() {
-      const res = await fetch(`${GAS_URL}?action=getConfig`);
-      const data = await res.json();
-      const rows = data.slice(1);
-      document.getElementById('jobType').innerHTML = '<option value="">เลือกประเภทงาน...</option>' + rows.map(r => `<option value="${r[1]}" data-cb="${r[2]}">${r[1]}</option>`).join('');
-      document.getElementById('config-list').innerHTML = rows.map(r => `<div class="flex justify-between bg-gray-50 p-2 rounded-lg"><span>${r[1]} (${r[2]} CB)</span><button onclick="deleteItem('Config','${r[0]}')" class="text-red-400 font-bold">ลบ</button></div>`).join('');
+      try {
+        const data = await fetchWithErrorHandling(`${GAS_URL}?action=getConfig`);
+        const rows = data.slice(1);
+        document.getElementById('jobType').innerHTML = '<option value="">เลือกประเภทงาน...</option>' + rows.map(r => `<option value="${r[1]}" data-cb="${r[2]}">${r[1]}</option>`).join('');
+        document.getElementById('config-list').innerHTML = rows.map(r => `<div class="flex justify-between bg-gray-50 p-2 rounded-lg"><span>${r[1]} (${r[2]} CB)</span><button onclick="deleteItem('Config','${r[0]}')" class="text-red-400 font-bold">ลบ</button></div>`).join('');
+      } catch (err) {
+        console.error('Failed to load config:', err);
+        document.getElementById('jobType').innerHTML = '<option value="">ไม่สามารถโหลดข้อมูลได้</option>';
+      }
     }
 
     async function deleteItem(tab, id) {
@@ -332,6 +730,149 @@
       document.getElementById('estCBDisplay').innerText = sel.options[sel.selectedIndex]?.dataset.cb || 0;
     }
 
+    // Permission helper function for frontend
+    function hasPermission(userRole, permission) {
+      const ROLE_PERMISSIONS = {
+        'User': {
+          canViewOwnOrders: true,
+          canSubmitOrders: true,
+          canViewAllOrders: false,
+          canEditOrders: true,
+          canFinishOrders: false,
+          canDeleteOrders: true,
+          canManageConfig: false,
+          canViewDashboard: false
+        },
+        'Chef': {
+          canViewOwnOrders: true,
+          canSubmitOrders: true,
+          canViewAllOrders: true,
+          canEditOrders: true,
+          canFinishOrders: true,
+          canDeleteOrders: true,
+          canManageConfig: false,
+          canViewDashboard: false
+        },
+        'Head Chef': {
+          canViewOwnOrders: true,
+          canSubmitOrders: true,
+          canViewAllOrders: true,
+          canEditOrders: true,
+          canFinishOrders: true,
+          canDeleteOrders: true,
+          canManageConfig: true,
+          canViewDashboard: true
+        }
+      };
+      
+      const permissions = ROLE_PERMISSIONS[userRole] || ROLE_PERMISSIONS['User'];
+      return permissions[permission] || false;
+    }
+    async function loadUsers() {
+      if (currentUser.role !== 'Head Chef') return;
+      
+      showLoadingSpinner('user-list', 'กำลังโหลดรายชื่อผู้ใช้...');
+      try {
+        const users = await fetchWithErrorHandling(`${GAS_URL}?action=getAllUsers`);
+        renderUserList(users);
+      } catch (err) {
+        console.error('Failed to load users:', err);
+        document.getElementById('user-list').innerHTML = '<p class="text-red-400 text-center">ไม่สามารถโหลดข้อมูลผู้ใช้ได้</p>';
+      }
+    }
+    
+    function renderUserList(users) {
+      const container = document.getElementById('user-list');
+      if (users.length === 0) {
+        container.innerHTML = '<p class="text-gray-400 text-center">ไม่พบผู้ใช้</p>';
+        return;
+      }
+      
+      container.innerHTML = users.map(user => {
+        const roleColors = {
+          'User': 'bg-gray-100 text-gray-600',
+          'Chef': 'bg-blue-100 text-blue-600', 
+          'Head Chef': 'bg-purple-100 text-purple-600'
+        };
+        
+        const roleIcons = {
+          'User': '👤',
+          'Chef': '👨‍🍳',
+          'Head Chef': '👨‍🍳‍🍳'
+        };
+        
+        return `
+          <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+            <div class="flex items-center gap-3">
+              <img src="${user.pictureUrl || 'https://via.placeholder.com/40'}" class="w-10 h-10 rounded-full" alt="${user.name}">
+              <div>
+                <div class="font-medium text-sm">${user.name}</div>
+                <div class="text-xs text-gray-500">CB: ${user.accCb} | BP: ${user.currentBp}</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs px-2 py-1 rounded-full font-medium ${roleColors[user.role]}">
+                ${roleIcons[user.role]} ${user.role}
+              </span>
+              <select onchange="updateUserRole('${user.lineId}', this.value)" class="text-xs border rounded px-2 py-1">
+                <option value="User" ${user.role === 'User' ? 'selected' : ''}>User</option>
+                <option value="Chef" ${user.role === 'Chef' ? 'selected' : ''}>Chef</option>
+                <option value="Head Chef" ${user.role === 'Head Chef' ? 'selected' : ''}>Head Chef</option>
+              </select>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    async function updateUserRole(targetLineId, newRole) {
+      if (!confirm(`ยืนยันการเปลี่ยน Role เป็น "${newRole}"?`)) return;
+      
+      try {
+        Swal.showLoading();
+        const result = await fetch(GAS_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'updateUserRole',
+            targetLineId,
+            newRole,
+            lineId: currentUser.userId
+          })
+        });
+        
+        const response = await result.json();
+        if (response.status === 'success') {
+          Swal.fire({
+            icon: 'success',
+            title: 'อัพเดท Role สำเร็จ!',
+            text: `เปลี่ยน Role เป็น ${newRole} เรียบร้อยแล้ว`,
+            confirmButtonColor: '#8b5cf6'
+          }).then(() => {
+            loadUsers();
+          });
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'เกิดข้อผิดพลาด',
+            text: response.message,
+            confirmButtonColor: '#8b5cf6'
+          });
+        }
+      } catch (err) {
+        console.error('Failed to update user role:', err);
+        Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: 'ไม่สามารถอัพเดท Role ได้',
+          confirmButtonColor: '#8b5cf6'
+        });
+      }
+    }
+    
+    function refreshUsers() {
+      loadUsers();
+    }
+    
     init();
   </script>
 </body>
