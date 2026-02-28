@@ -780,7 +780,9 @@
       
       showLoadingSpinner('user-list', 'กำลังโหลดรายชื่อผู้ใช้...');
       try {
+        console.log('Loading users from Members sheet...');
         const users = await fetchWithErrorHandling(`${GAS_URL}?action=getAllUsers`);
+        console.log('Users response:', users);
         renderUserList(users);
       } catch (err) {
         console.error('Failed to load users:', err);
