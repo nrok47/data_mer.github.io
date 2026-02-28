@@ -782,13 +782,20 @@
       try {
         console.log('Loading users from Members sheet...');
         
-        // Force cache busting
+        // Force cache busting and direct fetch
         const timestamp = new Date().getTime();
-        const users = await fetchWithErrorHandling(`${GAS_URL}?action=getAllUsers&_t=${timestamp}`);
+        const url = `${GAS_URL}?action=getAllUsers&_t=${timestamp}`;
+        console.log('Direct URL:', url);
         
-        console.log('Users response:', users);
-        console.log('Users response type:', typeof users);
-        console.log('Users response length:', users.length);
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const users = await response.json();
+        console.log('Direct fetch users response:', users);
+        console.log('Direct fetch users response type:', typeof users);
+        console.log('Direct fetch users response length:', users.length);
         
         // Check if we got the right data
         if (users.length > 0 && users[0].length === 7) {
