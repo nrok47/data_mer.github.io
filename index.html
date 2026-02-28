@@ -781,9 +781,27 @@
       showLoadingSpinner('user-list', 'กำลังโหลดรายชื่อผู้ใช้...');
       try {
         console.log('Loading users from Members sheet...');
-        const users = await fetchWithErrorHandling(`${GAS_URL}?action=getAllUsers`);
+        
+        // Force cache busting
+        const timestamp = new Date().getTime();
+        const users = await fetchWithErrorHandling(`${GAS_URL}?action=getAllUsers&_t=${timestamp}`);
+        
         console.log('Users response:', users);
-        renderUserList(users);
+        console.log('Users response type:', typeof users);
+        console.log('Users response length:', users.length);
+        
+        // Check if we got the right data
+        if (users.length > 0 && users[0].length === 7) {
+          console.log('✅ Got Members data (7 columns)');
+          renderUserList(users);
+        } else if (users.length > 0 && users[0].length === 11) {
+          console.log('❌ Got Orders data (11 columns) - WRONG!');
+          console.log('First row:', users[0]);
+          document.getElementById('user-list').innerHTML = '<p class="text-red-400 text-center">Error: Got Orders data instead of Members data!</p>';
+        } else {
+          console.log('❓ Unknown data format');
+          renderUserList(users);
+        }
       } catch (err) {
         console.error('Failed to load users:', err);
         document.getElementById('user-list').innerHTML = '<p class="text-red-400 text-center">ไม่สามารถโหลดข้อมูลผู้ใช้ได้</p>';
