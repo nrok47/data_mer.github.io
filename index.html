@@ -789,6 +789,13 @@
       }
       
       container.innerHTML = users.map(user => {
+        // Ensure values are properly displayed
+        const userName = user.name || 'Unknown User';
+        const userCb = user.accCb || 0;
+        const userBp = user.currentBp || 0;
+        const userRole = user.role || 'User';
+        const userPicture = user.pictureUrl || 'https://via.placeholder.com/40';
+        
         const roleColors = {
           'User': 'bg-gray-100 text-gray-600',
           'Chef': 'bg-blue-100 text-blue-600', 
@@ -804,20 +811,20 @@
         return `
           <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
             <div class="flex items-center gap-3">
-              <img src="${user.pictureUrl || 'https://via.placeholder.com/40'}" class="w-10 h-10 rounded-full" alt="${user.name}">
+              <img src="${userPicture}" class="w-10 h-10 rounded-full" alt="${userName}" onerror="this.src='https://via.placeholder.com/40'">
               <div>
-                <div class="font-medium text-sm">${user.name}</div>
-                <div class="text-xs text-gray-500">CB: ${user.accCb} | BP: ${user.currentBp}</div>
+                <div class="font-medium text-sm">${userName}</div>
+                <div class="text-xs text-gray-500">CB: ${userCb} | BP: ${userBp}</div>
               </div>
             </div>
             <div class="flex items-center gap-2">
-              <span class="text-xs px-2 py-1 rounded-full font-medium ${roleColors[user.role]}">
-                ${roleIcons[user.role]} ${user.role}
+              <span class="text-xs px-2 py-1 rounded-full font-medium ${roleColors[userRole]}">
+                ${roleIcons[userRole]} ${userRole}
               </span>
               <select onchange="updateUserRole('${user.lineId}', this.value)" class="text-xs border rounded px-2 py-1">
-                <option value="User" ${user.role === 'User' ? 'selected' : ''}>User</option>
-                <option value="Chef" ${user.role === 'Chef' ? 'selected' : ''}>Chef</option>
-                <option value="Head Chef" ${user.role === 'Head Chef' ? 'selected' : ''}>Head Chef</option>
+                <option value="User" ${userRole === 'User' ? 'selected' : ''}>User</option>
+                <option value="Chef" ${userRole === 'Chef' ? 'selected' : ''}>Chef</option>
+                <option value="Head Chef" ${userRole === 'Head Chef' ? 'selected' : ''}>Head Chef</option>
               </select>
             </div>
           </div>
