@@ -971,8 +971,11 @@
     // Close suggestions when clicking outside
     document.addEventListener('click', function(event) {
       const searchContainer = document.querySelector('.relative');
-      if (!searchContainer.contains(event.target)) {
-        document.getElementById('search-suggestions').classList.add('hidden');
+      if (searchContainer && !searchContainer.contains(event.target)) {
+        const suggestionsDiv = document.getElementById('search-suggestions');
+        if (suggestionsDiv) {
+          suggestionsDiv.classList.add('hidden');
+        }
       }
     });
     
