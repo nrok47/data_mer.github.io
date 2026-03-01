@@ -825,52 +825,156 @@
       // Debug: Log the data to see what we're getting
       console.log('Users data:', users);
       
-      container.innerHTML = users.map(user => {
-        // Debug: Check each user object
-        console.log('User object:', user);
-        
-        // Ensure values are properly displayed
-        const userName = user.name && user.name !== '' ? user.name : 'Unknown User';
-        const userCb = user.accCb || 0;
-        const userBp = user.currentBp || 0;
-        const userRole = user.role || 'User';
-        const userPicture = user.pictureUrl || 'https://via.placeholder.com/40';
-        
-        const roleColors = {
-          'User': 'bg-gray-100 text-gray-600',
-          'Chef': 'bg-blue-100 text-blue-600', 
-          'Head Chef': 'bg-purple-100 text-purple-600'
-        };
-        
-        const roleIcons = {
-          'User': '👤',
-          'Chef': '👨‍🍳',
-          'Head Chef': '👨‍🍳‍🍳'
-        };
-        
-        return `
-          <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-            <div class="flex items-center gap-3">
-              <img src="${userPicture}" class="w-10 h-10 rounded-full" alt="${userName}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMjAiIGZpbGw9IiNGM0Y0RjYiLz4KPHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4PSIxMCIgeT0iMTAiPgo8Y2lyY2xlIGN4PSIxMCIgY3k9IjgiIHI9IjQiIGZpbGw9IiM5Q0EzQUYiLz4KPHBhdGggZD0iTTEwIDE0QzEzLjMxMzcgMTQgMTYgMTEuMzEzNyAxNiA4QzE2IDQuNjg2MjkgMTMuMzEzNyAyIDEwIDJDNi42ODYyOSAyIDQgNC42ODYyOSA0IDhDNCAxMS4zMTM3IDYuNjg2MjkgMTQgMTAgMTRaIiBmaWxsPSIjOUNBM0FGIi8+Cjwvc3ZnPgo8L3N2Zz4K'">
-              <div>
-                <div class="font-medium text-sm">${userName}</div>
-                <div class="text-xs text-gray-500">CB: ${userCb} | BP: ${userBp}</div>
-              </div>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="text-xs px-2 py-1 rounded-full font-medium ${roleColors[userRole]}">
-                ${roleIcons[userRole]} ${userRole}
-              </span>
-              <select onchange="updateUserRole('${user.lineId}', this.value)" class="text-xs border rounded px-2 py-1">
-                <option value="User" ${userRole === 'User' ? 'selected' : ''}>User</option>
-                <option value="Chef" ${userRole === 'Chef' ? 'selected' : ''}>Chef</option>
-                <option value="Head Chef" ${userRole === 'Head Chef' ? 'selected' : ''}>Head Chef</option>
-              </select>
-            </div>
+      container.innerHTML = `
+        <div class="mb-4">
+          <div class="relative">
+            <input 
+              type="text" 
+              id="user-search" 
+              placeholder="🔍 ค้นหาชื่อผู้ใช้..."
+              class="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              onkeyup="filterUsersList()"
+            >
+            <div id="search-suggestions" class="absolute top-full left-0 right-0 bg-white border rounded-lg shadow-lg mt-1 max-h-60 overflow-y-auto z-10 hidden"></div>
           </div>
-        `;
-      }).join('');
+        </div>
+        <div id="filtered-users-list">
+          ${users.map((user, index) => {
+            // Debug: Check each user object
+            console.log('User object:', user);
+            
+            // Ensure values are properly displayed
+            const userName = user.name && user.name !== '' ? user.name : 'Unknown User';
+            const userCb = user.accCb || 0;
+            const userBp = user.currentBp || 0;
+            const userRole = user.role || 'User';
+            const userPicture = user.pictureUrl || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMjAiIGZpbGw9IiNGM0Y0RjYiLz4KPHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4PSIxMCIgeT0iMTAiPgo8Y2lyY2xlIGN4PSIxMCIgY3k9IjgiIHI9IjQiIGZpbGw9IiM5Q0EzQUYiLz4KPHBhdGggZD0iTTEwIDE0QzEzLjMxMzcgMTQgMTYgMTEuMzEzNyAxNiA4QzE2IDQuNjg2MjkgMTMuMzEzNyAyIDEwIDJDNi42ODYyOSAyIDQgNC42ODYyOSA0IDhDNCAxMS4zMTM3IDYuNjg2MjkgMTQgMTAgMTRaIiBmaWxsPSIjOUNBM0FGIi8+Cjwvc3ZnPgo8L3N2Zz4K';
+            
+            const roleColors = {
+              'User': 'bg-gray-100 text-gray-600',
+              'Chef': 'bg-blue-100 text-blue-600', 
+              'Head Chef': 'bg-purple-100 text-purple-600'
+            };
+            
+            const roleIcons = {
+              'User': '👤',
+              'Chef': '👨‍🍳',
+              'Head Chef': '👨‍🍳‍🍳'
+            };
+            
+            return `
+              <div class="user-item flex items-center justify-between bg-gray-50 p-3 rounded-lg mb-2" data-name="${userName.toLowerCase()}" data-role="${userRole}">
+                <div class="flex items-center gap-3">
+                  <img src="${userPicture}" class="w-10 h-10 rounded-full" alt="${userName}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMjAiIGZpbGw9IiNGM0Y0RjYiLz4KPHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4PSIxMCIgeT0iMTAiPgo8Y2lyY2xlIGN4PSIxMCIgY3k9IjgiIHI9IjQiIGZpbGw9IiM5Q0EzQUYiLz4KPHBhdGggZD0iTTEwIDE0QzEzLjMxMzcgMTQgMTYgMTEuMzEzNyAxNiA4QzE2IDQuNjg2MjkgMTMuMzEzNyAyIDEwIDJDNi42ODYyOSAyIDQgNC42ODYyOSA0IDhDNCAxMS4zMTM3IDYuNjg2MjkgMTQgMTAgMTRaIiBmaWxsPSIjOUNBM0FGIi8+Cjwvc3ZnPgo8L3N2Zz4K'">
+                  <div>
+                    <div class="font-medium text-sm">${userName}</div>
+                    <div class="text-xs text-gray-500">CB: ${userCb} | BP: ${userBp}</div>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs px-2 py-1 rounded-full font-medium ${roleColors[userRole]}">
+                    ${roleIcons[userRole]} ${userRole}
+                  </span>
+                  <select onchange="updateUserRole('${user.lineId}', this.value)" class="text-xs border rounded px-2 py-1">
+                    <option value="User" ${userRole === 'User' ? 'selected' : ''}>User</option>
+                    <option value="Chef" ${userRole === 'Chef' ? 'selected' : ''}>Chef</option>
+                    <option value="Head Chef" ${userRole === 'Head Chef' ? 'selected' : ''}>Head Chef</option>
+                  </select>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+      
+      // Initialize search functionality
+      initializeUserSearch();
     }
+    
+    // Search and filter functionality
+    function initializeUserSearch() {
+      const searchInput = document.getElementById('user-search');
+      const suggestionsDiv = document.getElementById('search-suggestions');
+      const allUserItems = document.querySelectorAll('.user-item');
+      
+      // Store original users data for filtering
+      window.allUsers = Array.from(allUserItems).map(item => ({
+        element: item,
+        name: item.dataset.name,
+        role: item.dataset.role
+      }));
+    }
+    
+    function filterUsersList() {
+      const searchInput = document.getElementById('user-search');
+      const suggestionsDiv = document.getElementById('search-suggestions');
+      const searchTerm = searchInput.value.toLowerCase().trim();
+      
+      if (searchTerm === '') {
+        // Show all users
+        suggestionsDiv.classList.add('hidden');
+        window.allUsers.forEach(user => {
+          user.element.style.display = 'flex';
+        });
+        return;
+      }
+      
+      // Filter users
+      const filteredUsers = window.allUsers.filter(user => 
+        user.name.includes(searchTerm)
+      );
+      
+      // Show suggestions
+      if (filteredUsers.length > 0) {
+        suggestionsDiv.innerHTML = filteredUsers.slice(0, 5).map(user => `
+          <div class="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2" onclick="selectUser('${user.name}')">
+            <span class="text-sm">${user.name}</span>
+            <span class="text-xs text-gray-500">${user.role}</span>
+          </div>
+        `).join('');
+        suggestionsDiv.classList.remove('hidden');
+      } else {
+        suggestionsDiv.innerHTML = '<div class="px-4 py-2 text-gray-500 text-sm">ไม่พบผู้ใช้</div>';
+        suggestionsDiv.classList.remove('hidden');
+      }
+      
+      // Filter visible users
+      window.allUsers.forEach(user => {
+        if (user.name.includes(searchTerm)) {
+          user.element.style.display = 'flex';
+        } else {
+          user.element.style.display = 'none';
+        }
+      });
+    }
+    
+    function selectUser(userName) {
+      const searchInput = document.getElementById('user-search');
+      const suggestionsDiv = document.getElementById('search-suggestions');
+      
+      searchInput.value = userName;
+      suggestionsDiv.classList.add('hidden');
+      
+      // Scroll to selected user
+      const userElements = document.querySelectorAll('.user-item');
+      userElements.forEach(element => {
+        if (element.dataset.name === userName.toLowerCase()) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          element.classList.add('ring-2', 'ring-blue-500');
+          setTimeout(() => {
+            element.classList.remove('ring-2', 'ring-blue-500');
+          }, 2000);
+        }
+      });
+    }
+    
+    // Close suggestions when clicking outside
+    document.addEventListener('click', function(event) {
+      const searchContainer = document.querySelector('.relative');
+      if (!searchContainer.contains(event.target)) {
+        document.getElementById('search-suggestions').classList.add('hidden');
+      }
+    });
     
     async function updateUserRole(targetLineId, newRole) {
       if (!confirm(`ยืนยันการเปลี่ยน Role เป็น "${newRole}"?`)) return;
