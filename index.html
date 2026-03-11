@@ -641,12 +641,17 @@
             return false;
           }
           
-          return { id, detail, cb: Number(cb), priority, status, action: 'updateOrder' };
+          return { id, detail, cb: Number(cb), priority, status, action: 'updateOrder', lineId: currentUser.userId };
         }
       });
       if (formValues) {
         Swal.showLoading();
-        await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(formValues) });
+        const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(formValues) });
+        const data = await res.json().catch(() => ({}));
+        if (data && data.status === 'error') {
+          Swal.fire('ไม่สามารถแก้ไขได้', data.message || 'เกิดข้อผิดพลาด', 'error');
+          return;
+        }
         Swal.fire({
           icon: 'success',
           title: 'แก้ไขเรียบร้อย!',

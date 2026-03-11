@@ -35,11 +35,12 @@ function doPost(e) {
   // ✅ ตรวจสอบสิทธิ์ทุกครั้ง
   const userRole = getUserRole(data.lineId);
   
-  if (action === 'updateOrder' || action === 'finishOrder' || action === 'deleteOrder') {
+  if (action === 'finishOrder' || action === 'deleteOrder') {
     if (userRole !== 'Chef' && userRole !== 'Head Chef') {
       return jsonResponse({status: "error", message: "Unauthorized: Chef role required"});
     }
   }
+  // updateOrder: ตรวจสิทธิ์ใน updateOrder() เอง (อนุญาตเจ้าของหรือ Chef)
   
   if (action === 'saveConfig') {
     if (userRole !== 'Head Chef') {
