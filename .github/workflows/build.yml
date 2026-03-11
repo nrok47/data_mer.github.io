@@ -1,0 +1,23 @@
+# Build workflow - ใช้ Node 24 เพื่อเลี่ยงคำเตือน deprecation (Node 20)
+# ดู: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+name: build
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build (static site - no build step)
+        run: |
+          echo "Static site - index.html, no compile needed"
+          ls -la
