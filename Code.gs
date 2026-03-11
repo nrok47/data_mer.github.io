@@ -6,6 +6,7 @@ function doGet(e) {
     if (action === 'getStats') return jsonResponse(getUserStats(e.parameter.lineId, e.parameter.name, e.parameter.pictureUrl));
     if (action === 'getConfig') return jsonResponse(getTableData('Config'));
     if (action === 'getDashboard') return jsonResponse(getDashboardData());
+    if (action === 'getAllUsers') return jsonResponse(getTableData('Members'));
 
     // default: return orders, but filter by requester if lineId provided
     const lineId = e.parameter.lineId;

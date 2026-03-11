@@ -5,13 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Chayagorn Kitchen | Chef Pro</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
   <script>
-    // Disable Tailwind production warning
-    if (typeof window !== 'undefined') {
-      window.TAILWIND_DISABLE_TOUCH = true;
-    }
+    // ลด noise: กรองคำเตือน Tailwind CDN (extension อาจ wrap console จึงกรองทั้ง warn และ error)
+    (function () {
+      var _warn = console.warn, _error = console.error;
+      function filter(msg) {
+        if (msg == null) return false;
+        var s = typeof msg === 'string' ? msg : (msg.message || String(msg));
+        return s.indexOf('cdn.tailwindcss.com') !== -1 || s.indexOf('should not be used in production') !== -1;
+      }
+      console.warn = function (msg) { if (filter(msg)) return; return _warn.apply(console, arguments); };
+      console.error = function (msg) { if (filter(msg)) return; return _error.apply(console, arguments); };
+    })();
   </script>
+  <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍳</text></svg>">
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
@@ -792,27 +799,20 @@
       
       showLoadingSpinner('user-list', 'กำลังโหลดรายชื่อผู้ใช้...');
       try {
-        console.log('Loading users from Members sheet...');
-        
-        // Force cache busting and direct fetch
         const timestamp = new Date().getTime();
         const url = `${GAS_URL}?action=getAllUsers&_t=${timestamp}`;
-        console.log('Direct URL:', url);
-        
         const response = await fetch(url);
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
-        
         const users = await response.json();
-        console.log('Direct fetch users response:', users);
-        console.log('Direct fetch users response type:', typeof users);
-        console.log('Direct fetch users response length:', users.length);
         
-        // Check if we got the right data (Members = 7 columns: lineId, name, accCb, currentBp, totalEarnedBp, role, pictureUrl)
+        // Check if we got the right data (Members = 7 columns). ข้ามแถวหัวเสมอถ้าแถวแรกมีข้อความหัว
         if (users.length > 0 && users[0].length === 7) {
-          console.log('✅ Got Members data (7 columns)');
-          const mapped = users.slice(1).map(row => ({
+          const first = users[0];
+          const looksLikeHeader = !first[0] || typeof first[0] !== 'string' || first[0] === 'Line_UID' || first[0].toLowerCase().startsWith('line_') || first[1] === 'Display_Name';
+          const dataRows = looksLikeHeader ? users.slice(1) : users;
+          const mapped = dataRows.map(row => ({
             userId: row[0],
             name: row[1],
             accCb: row[2],
@@ -837,13 +837,13 @@
     
     function renderUserList(users) {
       const container = document.getElementById('user-list');
-      if (users.length === 0) {
+      // รองรับทั้ง array of objects และ array of arrays (จาก sheet)
+      const list = users.map(u => Array.isArray(u) ? { userId: u[0], name: u[1], accCb: u[2], currentBp: u[3], totalEarnedBp: u[4], role: u[5], pictureUrl: u[6] } : u)
+        .filter(u => u && u.name !== 'Display_Name' && String(u.userId || u[0] || '').indexOf('Line_UID') === -1);
+      if (list.length === 0) {
         container.innerHTML = '<p class="text-gray-400 text-center">ไม่พบผู้ใช้</p>';
         return;
       }
-      
-      // Debug: Log the data to see what we're getting
-      console.log('Users data:', users);
       
       container.innerHTML = `
         <div class="mb-4">
@@ -859,11 +859,7 @@
           </div>
         </div>
         <div id="filtered-users-list">
-          ${users.map((user, index) => {
-            // Debug: Check each user object
-            console.log('User object:', user);
-            
-            // Ensure values are properly displayed
+          ${list.map((user) => {
             const userName = user.name && user.name !== '' ? user.name : 'Unknown User';
             const userCb = user.accCb || 0;
             const userBp = user.currentBp || 0;
