@@ -6,9 +6,21 @@ function doGet(e) {
     if (action === 'getStats') return jsonResponse(getUserStats(e.parameter.lineId, e.parameter.name, e.parameter.pictureUrl));
     if (action === 'getConfig') return jsonResponse(getTableData('Config'));
     if (action === 'getDashboard') return jsonResponse(getDashboardData());
-    
-    const data = getTableData('Orders');
-    return jsonResponse(data);
+
+    // default: return orders, but filter by requester if lineId provided
+    const lineId = e.parameter.lineId;
+    const orders = getTableData('Orders');
+    if (lineId) {
+      const role = getUserRole(lineId);
+      if (role === 'Chef' || role === 'Head Chef') {
+        return jsonResponse(orders);
+      } else {
+        // normal user only sees own orders
+        const filtered = orders.filter((row, i) => i === 0 || row[2] == lineId);
+        return jsonResponse(filtered);
+      }
+    }
+    return jsonResponse(orders);
   } catch (err) {
     Logger.log('Error in doGet: ' + err.toString()); // ✅ เก็บไว้ในล็อก
     return jsonResponse({status: "error", message: "An error occurred. Please try again."}); // ✅ แสดงข้อความทั่วไป
@@ -96,14 +108,31 @@ function submitOrder(d) {
 }
 
 function updateOrder(d) {
+  // ✅ authorization: owner or chef
+  const role = getUserRole(d.lineId);
+
   const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('Orders');
   const data = sheet.getDataRange().getValues();
   for (let i = 1; i < data.length; i++) {
     if (data[i][0] == d.id) {
-      sheet.getRange(i+1, 6).setValue(d.detail);
-      sheet.getRange(i+1, 8).setValue(d.cb);
-      sheet.getRange(i+1, 9).setValue(d.status);
-      sheet.getRange(i+1, 10).setValue(d.priority);
+      const owner = data[i][2];
+      if (role !== 'Chef' && role !== 'Head Chef' && owner !== d.lineId) {
+        return {status: "error", message: "Unauthorized"};
+      }
+
+      // validate inputs
+      const detail = String(d.detail || '').substring(0, 1000);
+      const cb = Number(d.cb);
+      if (isNaN(cb) || cb < 0 || cb > 10000) {
+        return {status: "error", message: "Invalid CB"};
+      }
+      const status = ['Pending','Doing','Done'].includes(d.status) ? d.status : data[i][8];
+      const priority = typeof d.priority === 'string' && d.priority.length<=5 ? d.priority : data[i][9];
+
+      sheet.getRange(i+1, 6).setValue(detail);
+      sheet.getRange(i+1, 8).setValue(cb);
+      sheet.getRange(i+1, 9).setValue(status);
+      sheet.getRange(i+1, 10).setValue(priority);
       break;
     }
   }
@@ -111,23 +140,38 @@ function updateOrder(d) {
 }
 
 function finishOrder(d) {
+  const role = getUserRole(d.lineId);
+
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   const orderSheet = ss.getSheetByName('Orders');
   const memberSheet = ss.getSheetByName('Members');
   const orders = orderSheet.getDataRange().getValues();
   for (let i = 1; i < orders.length; i++) {
     if (orders[i][0] == d.id) {
-      const customerId = orders[i][2];
+      const ownerId = orders[i][2];
+      if (role !== 'Chef' && role !== 'Head Chef' && ownerId !== d.lineId) {
+        return {status: "error", message: "Unauthorized"};
+      }
+
       const finalCb = Number(d.cb);
+      if (isNaN(finalCb) || finalCb < 0 || finalCb > 10000) {
+        return {status: "error", message: "Invalid CB"};
+      }
+      const bp = Number(d.bp);
+      if (isNaN(bp) || bp < 0 || bp > 20000) {
+        return {status: "error", message: "Invalid BP"};
+      }
+
+      const customerId = ownerId;
       orderSheet.getRange(i+1, 8).setValue(finalCb);
       orderSheet.getRange(i+1, 9).setValue("Done");
-      orderSheet.getRange(i+1, 11).setValue(d.bp);
+      orderSheet.getRange(i+1, 11).setValue(bp);
       const members = memberSheet.getDataRange().getValues();
       for (let j = 1; j < members.length; j++) {
         if (members[j][0] == customerId) {
           memberSheet.getRange(j+1, 3).setValue(Number(members[j][2]) + finalCb);
-          memberSheet.getRange(j+1, 4).setValue(Number(members[j][3]) + Number(d.bp));
-          memberSheet.getRange(j+1, 5).setValue(Number(members[j][4]) + Number(d.bp));
+          memberSheet.getRange(j+1, 4).setValue(Number(members[j][3]) + bp);
+          memberSheet.getRange(j+1, 5).setValue(Number(members[j][4]) + bp);
           break;
         }
       }
@@ -176,8 +220,16 @@ function deleteRowItem(tab, id, requestorLineId, requestorRole) {
 }
 
 function saveConfig(d) {
+  // basic validation
+  if (!d.category || typeof d.category !== 'string' || d.category.length > 100) {
+    return {status: "error", message: "Invalid category"};
+  }
+  const cb = Number(d.cb);
+  if (isNaN(cb) || cb <= 0 || cb > 10000) {
+    return {status: "error", message: "Invalid CB value"};
+  }
   const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('Config');
-  sheet.appendRow(["CFG-"+new Date().getTime(), d.category, d.cb, ""]);
+  sheet.appendRow(["CFG-"+new Date().getTime(), d.category, cb, ""]);
   return {status: "success"};
 }
 
