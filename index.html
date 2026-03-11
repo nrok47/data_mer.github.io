@@ -646,7 +646,7 @@
       });
       if (formValues) {
         Swal.showLoading();
-        await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formValues) });
+        await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(formValues) });
         Swal.fire({
           icon: 'success',
           title: 'แก้ไขเรียบร้อย!',
@@ -703,7 +703,7 @@
       });
       if (v) {
         Swal.showLoading();
-        await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'finishOrder', id, lineId: currentUser.userId, role: currentUser.role, ...v }) });
+        await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'finishOrder', id, lineId: currentUser.userId, role: currentUser.role, ...v }) });
         location.reload();
       }
     }
@@ -721,7 +721,6 @@
       try {
         const res = await fetch(GAS_URL, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'submitOrder', lineId: currentUser.userId, name: currentUser.displayName, title, detail: document.getElementById('jobDetail').value, type, baseCb: parseInt(document.getElementById('estCBDisplay').innerText) })
         });
         const data = await res.json().catch(() => ({}));
@@ -751,7 +750,7 @@
     async function deleteItem(tab, id) {
       if(!confirm("ยืนยันการลบ?")) return;
       Swal.showLoading();
-      await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'deleteOrder', tab, id, lineId: currentUser.userId, role: currentUser.role }) });
+      await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteOrder', tab, id, lineId: currentUser.userId, role: currentUser.role }) });
       location.reload();
     }
 
@@ -761,7 +760,7 @@
         html: '<input id="c-cat" class="swal2-input" placeholder="ชื่อ"><input id="c-cb" type="number" class="swal2-input" placeholder="CB">',
         preConfirm: () => [document.getElementById('c-cat').value, document.getElementById('c-cb').value]
       });
-      if (v) { await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'saveConfig', category: v[0], cb: v[1], lineId: currentUser.userId, role: currentUser.role }) }); loadConfig(); }
+      if (v) { await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'saveConfig', category: v[0], cb: v[1], lineId: currentUser.userId, role: currentUser.role }) }); loadConfig(); }
     }
 
     function showTab(t) {
