@@ -280,6 +280,16 @@
       `;
     }
     
+    // HTML escape helper — ป้องกัน XSS
+    function escHtml(str) {
+      return String(str == null ? '' : str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
     // Performance utilities
     function debounce(func, wait) {
       let timeout;
@@ -424,7 +434,7 @@
     async function fetchOrders() {
       showSkeletonLoader('order-list', 3);
       try {
-        const res = await fetch(GAS_URL);
+        const res = await fetch(`${GAS_URL}?lineId=${encodeURIComponent(currentUser.userId)}`);
         const data = await res.json();
         allOrders = data.slice(1);
         processAndRender();
@@ -552,9 +562,9 @@
                   <span class="text-[9px] font-bold px-2 py-0.5 rounded bg-gray-100 uppercase tracking-tighter text-gray-500 italic">Frog Rank ${o[9]}</span>
                   <span class="text-[9px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-500 uppercase tracking-tighter">${o[8]}</span>
                 </div>
-                <h4 class="font-bold text-gray-800 text-base leading-tight">${o[4]}</h4>
-                <p class="text-[10px] text-gray-400 mt-1">${o[3]} • ${new Date(o[1]).toLocaleDateString('th-TH')}</p>
-                <div class="mt-3 text-xs text-gray-600 italic bg-gray-50 p-2 rounded-lg">"${o[5] || '...'}"</div>
+                <h4 class="font-bold text-gray-800 text-base leading-tight">${escHtml(o[4])}</h4>
+                <p class="text-[10px] text-gray-400 mt-1">${escHtml(o[3])} • ${new Date(o[1]).toLocaleDateString('th-TH')}</p>
+                <div class="mt-3 text-xs text-gray-600 italic bg-gray-50 p-2 rounded-lg">"${escHtml(o[5]) || '...'}"</div>
               </div>
               <div class="text-right ml-4">
                 <span class="block font-black text-xl text-orange-500">${o[7]}</span>
@@ -707,8 +717,13 @@
         }
       });
       if (v) {
-        Swal.showLoading();
-        await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'finishOrder', id, lineId: currentUser.userId, role: currentUser.role, ...v }) });
+        Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'finishOrder', id, lineId: currentUser.userId, role: currentUser.role, ...v }) });
+        const data = await res.json().catch(() => ({}));
+        if (data && data.status === 'error') {
+          Swal.fire('ไม่สำเร็จ', data.message || 'เกิดข้อผิดพลาด', 'error');
+          return;
+        }
         location.reload();
       }
     }
@@ -745,7 +760,7 @@
         const data = await fetchWithErrorHandling(`${GAS_URL}?action=getConfig`);
         const rows = data.slice(1);
         document.getElementById('jobType').innerHTML = '<option value="">เลือกประเภทงาน...</option>' + rows.map(r => `<option value="${r[1]}" data-cb="${r[2]}">${r[1]}</option>`).join('');
-        document.getElementById('config-list').innerHTML = rows.map(r => `<div class="flex justify-between bg-gray-50 p-2 rounded-lg"><span>${r[1]} (${r[2]} CB)</span><button onclick="deleteItem('Config','${r[0]}')" class="text-red-400 font-bold">ลบ</button></div>`).join('');
+        document.getElementById('config-list').innerHTML = rows.map(r => `<div class="flex justify-between bg-gray-50 p-2 rounded-lg"><span>${escHtml(r[1])} (${escHtml(r[2])} CB)</span><button onclick="deleteItem('Config','${escHtml(r[0])}')" class="text-red-400 font-bold">ลบ</button></div>`).join('');
       } catch (err) {
         console.error('Failed to load config:', err);
         document.getElementById('jobType').innerHTML = '<option value="">ไม่สามารถโหลดข้อมูลได้</option>';
@@ -753,9 +768,23 @@
     }
 
     async function deleteItem(tab, id) {
-      if(!confirm("ยืนยันการลบ?")) return;
-      Swal.showLoading();
-      await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteOrder', tab, id, lineId: currentUser.userId, role: currentUser.role }) });
+      const result = await Swal.fire({
+        title: 'ยืนยันการลบ?',
+        text: 'ไม่สามารถกู้คืนได้หลังจากลบ',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'ลบ',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#ef4444'
+      });
+      if (!result.isConfirmed) return;
+      Swal.fire({ title: 'กำลังลบ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteOrder', tab, id, lineId: currentUser.userId, role: currentUser.role }) });
+      const data = await res.json().catch(() => ({}));
+      if (data && data.status === 'error') {
+        Swal.fire('ลบไม่สำเร็จ', data.message || 'เกิดข้อผิดพลาด', 'error');
+        return;
+      }
       location.reload();
     }
 
@@ -884,7 +913,7 @@
         </div>
         <div id="filtered-users-list">
           ${list.map((user) => {
-            const userName = user.name && user.name !== '' ? user.name : 'Unknown User';
+            const userName = escHtml(user.name && user.name !== '' ? user.name : 'Unknown User');
             const userCb = user.accCb || 0;
             const userBp = user.currentBp || 0;
             const userRole = user.role || 'User';
@@ -917,7 +946,7 @@
                   <span class="text-xs px-2 py-1 rounded-full font-medium ${roleColors[userRole]}">
                     ${roleIcons[userRole]} ${userRole}
                   </span>
-                  <select onchange="updateUserRole('${user.lineId}', this.value)" class="text-xs border rounded px-2 py-1">
+                  <select onchange="updateUserRole('${user.userId}', this.value)" class="text-xs border rounded px-2 py-1">
                     <option value="User" ${userRole === 'User' ? 'selected' : ''}>User</option>
                     <option value="Chef" ${userRole === 'Chef' ? 'selected' : ''}>Chef</option>
                     <option value="Head Chef" ${userRole === 'Head Chef' ? 'selected' : ''}>Head Chef</option>

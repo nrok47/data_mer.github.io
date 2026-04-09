@@ -29,31 +29,36 @@ function doGet(e) {
 }
 
 function doPost(e) {
-  const data = JSON.parse(e.postData.contents);
-  const action = data.action;
+  try {
+    const data = JSON.parse(e.postData.contents);
+    const action = data.action;
 
-  // ✅ ตรวจสอบสิทธิ์ทุกครั้ง
-  const userRole = getUserRole(data.lineId);
-  
-  if (action === 'finishOrder' || action === 'deleteOrder') {
-    if (userRole !== 'Chef' && userRole !== 'Head Chef') {
-      return jsonResponse({status: "error", message: "Unauthorized: Chef role required"});
+    // ✅ ตรวจสอบสิทธิ์ทุกครั้ง
+    const userRole = getUserRole(data.lineId);
+
+    if (action === 'finishOrder' || action === 'deleteOrder') {
+      if (userRole !== 'Chef' && userRole !== 'Head Chef') {
+        return jsonResponse({status: "error", message: "Unauthorized: Chef role required"});
+      }
     }
-  }
-  // updateOrder: ตรวจสิทธิ์ใน updateOrder() เอง (อนุญาตเจ้าของหรือ Chef)
-  
-  if (action === 'saveConfig') {
-    if (userRole !== 'Head Chef') {
-      return jsonResponse({status: "error", message: "Unauthorized: Head Chef role required"});
+    // updateOrder: ตรวจสิทธิ์ใน updateOrder() เอง (อนุญาตเจ้าของหรือ Chef)
+
+    if (action === 'saveConfig') {
+      if (userRole !== 'Head Chef') {
+        return jsonResponse({status: "error", message: "Unauthorized: Head Chef role required"});
+      }
     }
+
+    if (action === 'submitOrder') return jsonResponse(submitOrder(data));
+    if (action === 'finishOrder') return jsonResponse(finishOrder(data));
+    if (action === 'updateOrder') return jsonResponse(updateOrder(data));
+    if (action === 'deleteOrder') return jsonResponse(deleteRowItem(data.tab, data.id, data.lineId, userRole));
+    if (action === 'saveConfig') return jsonResponse(saveConfig(data));
+    return jsonResponse({status: "error", message: "No action found"});
+  } catch (err) {
+    Logger.log('Error in doPost: ' + err.toString());
+    return jsonResponse({status: "error", message: "An error occurred. Please try again."});
   }
-  
-  if (action === 'submitOrder') return jsonResponse(submitOrder(data));
-  if (action === 'finishOrder') return jsonResponse(finishOrder(data));
-  if (action === 'updateOrder') return jsonResponse(updateOrder(data));
-  if (action === 'deleteOrder') return jsonResponse(deleteRowItem(data.tab, data.id, data.lineId, userRole));
-  if (action === 'saveConfig') return jsonResponse(saveConfig(data));
-  return jsonResponse({status: "error", message: "No action found"});
 }
 
 function jsonResponse(obj) {
@@ -201,6 +206,14 @@ function getDashboardData() {
 }
 
 function deleteRowItem(tab, id, requestorLineId, requestorRole) {
+  // ✅ whitelist: อนุญาตลบได้เฉพาะ Orders และ Config เท่านั้น
+  if (tab !== 'Orders' && tab !== 'Config') {
+    return {status: "error", message: "Invalid tab"};
+  }
+  // Config: เฉพาะ Head Chef
+  if (tab === 'Config' && requestorRole !== 'Head Chef') {
+    return {status: "error", message: "Unauthorized: Head Chef role required"};
+  }
   const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(tab);
   const data = sheet.getDataRange().getValues();
   for (let i = 1; i < data.length; i++) {
