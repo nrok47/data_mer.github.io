@@ -485,7 +485,7 @@
       currentFilter = status;
       document.querySelectorAll('.filter-btn').forEach(b => {
         b.classList.remove('filter-btn-active');
-        if(b.innerText.includes(status === 'All' ? 'ทั้งหมด' : status === 'Pending' ? 'รอคิว' : status === 'Doing' ? 'กำลังทำ' : 'เสร็จแล้ว')) b.classList.add('filter-btn-active');
+        if(b.innerText.includes(status === 'All' ? 'ทั้งหมด' : status === 'Pending' ? 'รอคิว' : status === 'Doing' ? 'ทำอยู่' : 'เสร็จ')) b.classList.add('filter-btn-active');
       });
       processAndRender();
     }
@@ -561,9 +561,9 @@
           case 'date-asc':
             return new Date(a[1]) - new Date(b[1]);
           case 'rank-asc':
-            return a[9].localeCompare(b[9]);
+            return (a[9] || 'Z').localeCompare(b[9] || 'Z');
           case 'rank-desc':
-            return b[9].localeCompare(a[9]);
+            return (b[9] || 'Z').localeCompare(a[9] || 'Z');
           case 'cb-desc':
             return Number(b[7]) - Number(a[7]);
           case 'cb-asc':
@@ -698,7 +698,7 @@
         }
       });
       if (formValues) {
-        Swal.showLoading();
+        Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(formValues) });
         const data = await res.json().catch(() => ({}));
         if (data && data.status === 'error') {
@@ -780,7 +780,7 @@
       const title = document.getElementById('jobTitle').value;
       const type = document.getElementById('jobType').value;
       if (!title || !type) { Swal.fire('Error', 'กรุณาระบุข้อมูลให้ครบ', 'warning'); isSubmitting = false; return; }
-      Swal.showLoading();
+      Swal.fire({ title: 'กำลังส่งออเดอร์...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
       try {
         const res = await fetch(GAS_URL, {
           method: 'POST',
@@ -835,7 +835,13 @@
       const { value: v } = await Swal.fire({
         title: 'เพิ่มประเภทงาน',
         html: '<input id="c-cat" class="swal2-input" placeholder="ชื่อ"><input id="c-cb" type="number" class="swal2-input" placeholder="CB">',
-        preConfirm: () => [document.getElementById('c-cat').value, document.getElementById('c-cb').value]
+        preConfirm: () => {
+          const cat = document.getElementById('c-cat').value.trim();
+          const cb = document.getElementById('c-cb').value;
+          if (!cat) { Swal.showValidationMessage('กรุณาระบุชื่อประเภทงาน'); return false; }
+          if (!cb || Number(cb) <= 0) { Swal.showValidationMessage('กรุณาระบุ CB ที่มากกว่า 0'); return false; }
+          return [cat, cb];
+        }
       });
       if (v) { await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'saveConfig', category: v[0], cb: v[1], lineId: currentUser.userId, role: currentUser.role }) }); loadConfig(); }
     }
