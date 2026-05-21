@@ -105,7 +105,9 @@ function submitOrder(d) {
     const detail = String(d.detail || '').substring(0, 1000); // จำกัดความยาว
     
     const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('Orders');
-    sheet.appendRow(["ORD-"+new Date().getTime(), new Date(), d.lineId, d.name, d.title, detail, d.type, baseCb, "Pending", "B", 0]);
+    const priority = ['A','B','C','D','E'].includes(d.priority) ? d.priority : 'B';
+    const dueDate = d.dueDate ? new Date(d.dueDate) : '';
+    sheet.appendRow(["ORD-"+new Date().getTime(), new Date(), d.lineId, d.name, d.title, detail, d.type, baseCb, "Pending", priority, 0, dueDate]);
     Logger.log('Order submitted: ' + d.title);
     return {status: "success", message: "สั่งเมนูงานเรียบร้อย!"};
   } catch (e) {
@@ -140,6 +142,7 @@ function updateOrder(d) {
       sheet.getRange(i+1, 8).setValue(cb);
       sheet.getRange(i+1, 9).setValue(status);
       sheet.getRange(i+1, 10).setValue(priority);
+      if (d.dueDate !== undefined) sheet.getRange(i+1, 12).setValue(d.dueDate ? new Date(d.dueDate) : '');
       break;
     }
   }
