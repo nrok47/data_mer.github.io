@@ -285,21 +285,30 @@
     let pollingInterval     = null;
     let sprintData          = null;
 
-    // ─── Sheet status ────────────────────────────────────────────────────────
-    async function checkSheetConnection() {
+    // ─── Cache (localStorage, stale-while-revalidate) ─────────────────────────
+    const CACHE = {
+      ORDERS_TTL: 2  * 60 * 1000,  // 2 min
+      CONFIG_TTL: 30 * 60 * 1000,  // 30 min
+      get(key) {
+        try {
+          const item = JSON.parse(localStorage.getItem('dm_' + key));
+          if (!item) return null;
+          if (Date.now() - item.ts > item.ttl) { localStorage.removeItem('dm_' + key); return null; }
+          return item.data;
+        } catch { return null; }
+      },
+      set(key, data, ttl) {
+        try { localStorage.setItem('dm_' + key, JSON.stringify({ data, ts: Date.now(), ttl })); } catch {}
+      }
+    };
+
+    // ─── Sheet status dot (called by loadConfig result — no extra request) ────
+    function updateSheetStatus(ok) {
       const el = document.getElementById('sheet-status');
       if (!el) return;
-      try {
-        const res = await fetch(`${GAS_URL}?action=getConfig&_=${Date.now()}`);
-        await res.json().catch(() => null);
-        el.classList.remove('bg-gray-400', 'bg-red-500', 'bg-green-500');
-        el.classList.add(res.ok ? 'bg-green-500' : 'bg-red-500');
-        el.title = res.ok ? 'Google Sheet เชื่อมต่อปกติ' : 'Google Sheet ติดต่อไม่ได้';
-      } catch {
-        el.classList.remove('bg-gray-400', 'bg-green-500');
-        el.classList.add('bg-red-500');
-        el.title = 'Google Sheet ติดต่อไม่ได้';
-      }
+      el.classList.remove('bg-gray-400', 'bg-red-500', 'bg-green-500');
+      el.classList.add(ok ? 'bg-green-500' : 'bg-red-500');
+      el.title = ok ? 'Google Sheet เชื่อมต่อปกติ' : 'Google Sheet ติดต่อไม่ได้';
     }
 
     // ─── Loading UI ───────────────────────────────────────────────────────────
@@ -354,24 +363,30 @@
 
     // ─── Init ─────────────────────────────────────────────────────────────────
     async function init() {
-      // Populate sprint options
       const thisWeek = getThisWeek(), nextWeek = getNextWeek();
       document.getElementById('sprint-opt-this').value       = thisWeek;
       document.getElementById('sprint-opt-this').textContent = `🔥 สัปดาห์นี้ (${thisWeek})`;
       document.getElementById('sprint-opt-next').value       = nextWeek;
       document.getElementById('sprint-opt-next').textContent = `📅 สัปดาห์หน้า (${nextWeek})`;
 
-      checkSheetConnection();
-      setInterval(checkSheetConnection, 60000);
       await liff.init({ liffId: LIFF_ID });
       if (!liff.isLoggedIn()) { liff.login(); return; }
       const profile = await liff.getProfile();
       currentUser = profile;
       document.getElementById('user-pic').src = profile.pictureUrl || '';
-      await loadUserStats();
-      loadConfig();
-      fetchOrders();
+
+      // Paint cached data immediately (stale-while-revalidate)
+      const cachedOrders = CACHE.get('orders_' + profile.userId);
+      if (cachedOrders) { allOrders = cachedOrders; processAndRender(); }
+      const cachedConfig = CACHE.get('config');
+      if (cachedConfig) applyConfig(cachedConfig);
+
+      // Fetch stats + config + orders all at once
+      await Promise.all([ loadUserStats(), loadConfig(), fetchOrders() ]);
+
       startRealTimeUpdates();
+      // Re-check sheet status every 60s using a lightweight config poll
+      setInterval(loadConfig, 60000);
     }
 
     // ─── User stats ───────────────────────────────────────────────────────────
@@ -416,13 +431,16 @@
 
     // ─── Orders ───────────────────────────────────────────────────────────────
     async function fetchOrders() {
-      showSkeletonLoader('order-list', 3);
+      if (!allOrders.length) showSkeletonLoader('order-list', 3);
       try {
         const res  = await fetch(GAS_URL);
         const data = await res.json();
         allOrders  = data.slice(1);
+        CACHE.set('orders_' + currentUser.userId, allOrders, CACHE.ORDERS_TTL);
         processAndRender();
-      } catch { showError('order-list', 'เกิดข้อผิดพลาดในการโหลดข้อมูล'); }
+      } catch {
+        if (!allOrders.length) showError('order-list', 'เกิดข้อผิดพลาดในการโหลดข้อมูล');
+      }
     }
 
     function filterOrders(status) {
@@ -669,17 +687,27 @@
     }
 
     // ─── Config ───────────────────────────────────────────────────────────────
+    function applyConfig(data) {
+      const rows = Array.isArray(data) ? data.slice(1) : [];
+      document.getElementById('jobType').innerHTML =
+        '<option value="">เลือกประเภทงาน...</option>' +
+        rows.map(r => `<option value="${r[1]}" data-cb="${r[2]}">${r[1]}</option>`).join('');
+      document.getElementById('config-list').innerHTML =
+        rows.map(r => `<div class="flex justify-between bg-gray-50 p-2 rounded-lg"><span>${r[1]} (${r[2]} CB)</span><button onclick="deleteItem('Config','${r[0]}')" class="text-red-400 font-bold">ลบ</button></div>`).join('');
+    }
+
     async function loadConfig() {
       try {
-        const data = await fetchWithErrorHandling(`${GAS_URL}?action=getConfig`);
-        const rows = data.slice(1);
-        document.getElementById('jobType').innerHTML =
-          '<option value="">เลือกประเภทงาน...</option>' +
-          rows.map(r => `<option value="${r[1]}" data-cb="${r[2]}">${r[1]}</option>`).join('');
-        document.getElementById('config-list').innerHTML =
-          rows.map(r => `<div class="flex justify-between bg-gray-50 p-2 rounded-lg"><span>${r[1]} (${r[2]} CB)</span><button onclick="deleteItem('Config','${r[0]}')" class="text-red-400 font-bold">ลบ</button></div>`).join('');
+        const res  = await fetch(`${GAS_URL}?action=getConfig`);
+        updateSheetStatus(res.ok);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        applyConfig(data);
+        CACHE.set('config', data, CACHE.CONFIG_TTL);
       } catch {
-        document.getElementById('jobType').innerHTML = '<option value="">ไม่สามารถโหลดได้</option>';
+        updateSheetStatus(false);
+        if (!document.getElementById('jobType').options.length)
+          document.getElementById('jobType').innerHTML = '<option value="">ไม่สามารถโหลดได้</option>';
       }
     }
 
