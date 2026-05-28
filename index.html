@@ -61,10 +61,11 @@
 
     <!-- Nav -->
     <nav class="bg-white shadow-md sticky top-0 z-20 flex justify-around p-2 mb-4 rounded-xl mx-4">
-      <button onclick="showTab('customer')" id="tab-customer" class="flex-1 py-2 active-tab text-sm">ลูกค้า</button>
-      <button onclick="showTab('chef')"     id="tab-chef"     class="flex-1 py-2 text-sm">งานเชฟ</button>
-      <button onclick="showTab('sprint')"   id="tab-sprint"   class="flex-1 py-2 text-sm">🚀 Sprint</button>
-      <button onclick="showTab('admin')"    id="tab-admin"    class="flex-1 py-2 text-sm">จัดการ</button>
+      <button onclick="showTab('customer')" id="tab-customer" class="flex-1 py-2 active-tab text-[11px]">ลูกค้า</button>
+      <button onclick="showTab('chef')"     id="tab-chef"     class="flex-1 py-2 text-[11px]">งานเชฟ</button>
+      <button onclick="showTab('sprint')"   id="tab-sprint"   class="flex-1 py-2 text-[11px]">🚀 Sprint</button>
+      <button onclick="showTab('history')"  id="tab-history"  class="flex-1 py-2 text-[11px]">📊 ประวัติ</button>
+      <button onclick="showTab('admin')"    id="tab-admin"    class="flex-1 py-2 text-[11px]">จัดการ</button>
     </nav>
 
     <!-- ============================================================ -->
@@ -218,6 +219,19 @@
           <div id="sprint-nextweek" class="space-y-2 min-h-12"></div>
         </div>
       </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- PAGE: ประวัติ -->
+    <!-- ============================================================ -->
+    <div id="page-history" class="p-4 hidden space-y-4">
+      <!-- Velocity chart -->
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+        <h3 class="font-bold text-gray-700 mb-4">📈 CB ที่ทำเสร็จรายสัปดาห์</h3>
+        <div id="history-chart" class="space-y-2"></div>
+      </div>
+      <!-- Done tasks grouped by week -->
+      <div id="history-list" class="space-y-4"></div>
     </div>
 
     <!-- ============================================================ -->
@@ -524,10 +538,11 @@
               </div>
             </div>
             ${isChef ? `
-              <div class="mt-4 grid grid-cols-3 gap-2">
-                ${canEdit   ? `<button onclick="editOrderModal('${o[0]}','${encodeURIComponent(o[5])}',${o[7]},'${o[9]}','${o[8]}','${o[11]||''}','${o[12]||''}')" class="bg-blue-500 text-white text-[10px] py-2 rounded-xl font-bold">1. ปรับแก้</button>` : '<div></div>'}
-                ${canFinish ? `<button onclick="finishOrderModal('${o[0]}',${o[7]})" class="bg-green-500 text-white text-[10px] py-2 rounded-xl font-bold ${o[8] === 'Done' ? 'opacity-30 pointer-events-none' : ''}">2. เสร็จงาน</button>` : '<div></div>'}
-                ${canDelete ? `<button onclick="deleteItem('Orders','${o[0]}')" class="bg-gray-100 text-gray-400 text-[10px] py-2 rounded-xl font-bold">3. ลบทิ้ง</button>` : '<div></div>'}
+              ${o[8] === 'Pending' ? `<button onclick="quickStatus('${o[0]}','Doing')" class="mt-3 w-full bg-blue-500 text-white text-[12px] py-3 rounded-xl font-bold">▶ เริ่มทำเลย</button>` : ''}
+              <div class="mt-2 grid grid-cols-3 gap-2">
+                ${canEdit   ? `<button onclick="editOrderModal('${o[0]}','${encodeURIComponent(o[5])}',${o[7]},'${o[9]}','${o[8]}','${o[11]||''}','${o[12]||''}')" class="bg-blue-50 text-blue-500 text-[10px] py-2 rounded-xl font-bold">ปรับแก้</button>` : '<div></div>'}
+                ${canFinish ? `<button onclick="finishOrderModal('${o[0]}',${o[7]})" class="bg-green-500 text-white text-[10px] py-2 rounded-xl font-bold ${o[8] === 'Done' ? 'opacity-30 pointer-events-none' : ''}">✅ เสร็จงาน</button>` : '<div></div>'}
+                ${canDelete ? `<button onclick="deleteItem('Orders','${o[0]}')" class="bg-gray-100 text-gray-400 text-[10px] py-2 rounded-xl font-bold">ลบ</button>` : '<div></div>'}
               </div>` : (isOwn ? `
               <div class="mt-4 grid grid-cols-2 gap-2">
                 <button onclick="editOrderModal('${o[0]}','${encodeURIComponent(o[5])}',${o[7]},'${o[9]}','${o[8]}','${o[11]||''}','${o[12]||''}')" class="bg-blue-500 text-white text-[10px] py-2 rounded-xl font-bold">แก้ไข</button>
@@ -857,6 +872,90 @@
         </div>`;
     }
 
+    // ─── Quick status (Pending → Doing, no modal) ────────────────────────────
+    async function quickStatus(id, newStatus) {
+      const order = allOrders.find(o => o[0] == id);
+      if (!order) return;
+      // Optimistic update
+      order[8] = newStatus;
+      CACHE.set('orders_' + currentUser.userId, allOrders, CACHE.ORDERS_TTL);
+      processAndRender();
+      try {
+        await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({
+          action: 'updateOrder', id, lineId: currentUser.userId,
+          detail: order[5] || '', cb: order[7], priority: order[9],
+          status: newStatus, sprint: order[11] || '', dueDate: order[12] || null
+        })});
+      } catch {
+        // Rollback on failure
+        order[8] = 'Pending';
+        processAndRender();
+        Swal.fire({ icon: 'error', title: 'อัพเดทไม่ได้', text: 'กรุณาลองใหม่', confirmButtonColor: '#f59e0b' });
+      }
+    }
+
+    // ─── History ─────────────────────────────────────────────────────────────
+    function renderHistory() {
+      const done = allOrders.filter(o => o[8] === 'Done');
+      if (!done.length) {
+        document.getElementById('history-chart').innerHTML = '<p class="text-gray-400 text-sm text-center">ยังไม่มีงานเสร็จ</p>';
+        document.getElementById('history-list').innerHTML  = '';
+        return;
+      }
+
+      // Group by ISO week
+      const byWeek = {};
+      done.forEach(o => {
+        const w = getWeekLabel(new Date(o[1]));
+        if (!byWeek[w]) byWeek[w] = [];
+        byWeek[w].push(o);
+      });
+      const weeks   = Object.keys(byWeek).sort().reverse().slice(0, 8);
+      const maxCb   = Math.max(...weeks.map(w => byWeek[w].reduce((s, o) => s + Number(o[7]), 0)), 1);
+      const thisW   = getThisWeek();
+
+      // Velocity bar chart
+      document.getElementById('history-chart').innerHTML = weeks.map(w => {
+        const cb      = byWeek[w].reduce((s, o) => s + Number(o[7]), 0);
+        const count   = byWeek[w].length;
+        const pct     = Math.round(cb / maxCb * 100);
+        const isThis  = w === thisW;
+        return `
+          <div>
+            <div class="flex justify-between text-[11px] mb-1">
+              <span class="font-bold ${isThis ? 'text-orange-500' : 'text-gray-600'}">${w}${isThis ? ' 🔥' : ''}</span>
+              <span class="text-gray-500">${count} งาน · <span class="font-black text-orange-500">${cb} CB</span></span>
+            </div>
+            <div class="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden">
+              <div class="h-full rounded-full ${isThis ? 'bg-orange-400' : 'bg-gray-400'}" style="width:${pct}%;transition:width .8s ease"></div>
+            </div>
+          </div>`;
+      }).join('');
+
+      // Done tasks by week
+      document.getElementById('history-list').innerHTML = weeks.map(w => {
+        const tasks = byWeek[w].sort((a, b) => new Date(b[1]) - new Date(a[1]));
+        const total = tasks.reduce((s, o) => s + Number(o[7]), 0);
+        return `
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="flex justify-between items-center px-5 py-3 bg-gray-50 border-b border-gray-100">
+              <span class="font-bold text-sm text-gray-700">${w}</span>
+              <span class="text-xs font-black text-orange-500">${total} CB · ${tasks.length} งาน</span>
+            </div>
+            <div class="divide-y divide-gray-50">
+              ${tasks.map(o => `
+                <div class="px-5 py-3 flex justify-between items-center">
+                  <div>
+                    <p class="text-sm font-bold text-gray-700 leading-tight">${o[4]}</p>
+                    <p class="text-[10px] text-gray-400 mt-0.5">${o[3]} · ${new Date(o[1]).toLocaleDateString('th-TH')}</p>
+                  </div>
+                  <span class="font-black text-orange-500 ml-4">${o[7]} CB</span>
+                </div>`).join('')}
+            </div>
+          </div>`;
+      }).join('');
+    }
+
     async function quickAssignSprint(id, sprint) {
       try {
         await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'assignSprint', id, sprint, lineId: currentUser.userId }) });
@@ -866,13 +965,14 @@
 
     // ─── Tab switching ────────────────────────────────────────────────────────
     function showTab(t) {
-      ['customer','chef','sprint','admin'].forEach(tab => {
+      ['customer','chef','sprint','history','admin'].forEach(tab => {
         document.getElementById('page-'+tab).classList.add('hidden');
         document.getElementById('tab-'+tab).classList.remove('active-tab');
       });
       document.getElementById('page-'+t).classList.remove('hidden');
       document.getElementById('tab-'+t).classList.add('active-tab');
-      if (t === 'sprint' && !sprintData) fetchSprintView();
+      if (t === 'sprint'  && !sprintData)  fetchSprintView();
+      if (t === 'history')                 renderHistory();
     }
 
     function updateEstCB() {
