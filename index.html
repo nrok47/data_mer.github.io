@@ -355,7 +355,19 @@
 
     // ─── Error handlers ───────────────────────────────────────────────────────
     window.addEventListener('error', () => Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'กรุณารีเฟรชหน้า', confirmButtonColor: '#f59e0b' }));
-    window.addEventListener('unhandledrejection', () => Swal.fire({ icon: 'warning', title: 'การเชื่อมต่อมีปัญหา', text: 'กรุณาตรวจสอบอินเทอร์เน็ต', confirmButtonColor: '#f59e0b' }));
+    // [fix] dedup + filter: skip LIFF/fetch/abort rejections, show at most 1 dialog at a time
+    let _rejectionDialogOpen = false;
+    window.addEventListener('unhandledrejection', (event) => {
+      const msg = (event.reason?.message || String(event.reason || '')).toLowerCase();
+      if (msg.includes('liff') || msg.includes('fetch') || msg.includes('abort') || msg.includes('networkerror')) {
+        event.preventDefault(); return;
+      }
+      if (_rejectionDialogOpen) { event.preventDefault(); return; }
+      _rejectionDialogOpen = true;
+      Swal.fire({ icon: 'warning', title: 'การเชื่อมต่อมีปัญหา', text: 'กรุณาตรวจสอบอินเทอร์เน็ต', confirmButtonColor: '#f59e0b' })
+        .then(() => { _rejectionDialogOpen = false; });
+      event.preventDefault();
+    });
 
     async function fetchWithErrorHandling(url, options = {}) {
       const response = await fetch(url, options);
@@ -418,7 +430,10 @@
         document.getElementById('dashboard-section').classList.toggle('hidden', !isHead);
         document.getElementById('user-management-section').classList.toggle('hidden', !isHead);
         if (isHead) { loadDashboard(); loadUsers(); }
-      } catch { document.getElementById('display-name').innerText = 'Error loading'; }
+      } catch {
+        document.getElementById('display-name').innerText = 'Error loading';
+        currentUser.role = currentUser.role || 'User'; // [fix] ensure role never stays undefined
+      }
     }
 
     // ─── Dashboard ────────────────────────────────────────────────────────────
@@ -447,11 +462,14 @@
     async function fetchOrders() {
       if (!allOrders.length) showSkeletonLoader('order-list', 3);
       try {
-        const res  = await fetch(GAS_URL);
+        // [fix] send lineId so doGet applies role-based filtering — no more data leakage
+        const res  = await fetch(`${GAS_URL}?lineId=${encodeURIComponent(currentUser.userId)}`);
         const data = await res.json();
         allOrders  = data.slice(1);
         CACHE.set('orders_' + currentUser.userId, allOrders, CACHE.ORDERS_TTL);
         processAndRender();
+        // [fix] re-render history tab if it's currently open
+        if (!document.getElementById('page-history').classList.contains('hidden')) renderHistory();
       } catch {
         if (!allOrders.length) showError('order-list', 'เกิดข้อผิดพลาดในการโหลดข้อมูล');
       }
@@ -703,12 +721,19 @@
 
     // ─── Config ───────────────────────────────────────────────────────────────
     function applyConfig(data) {
-      const rows = Array.isArray(data) ? data.slice(1) : [];
-      document.getElementById('jobType').innerHTML =
-        '<option value="">เลือกประเภทงาน...</option>' +
+      const rows      = Array.isArray(data) ? data.slice(1) : [];
+      const jobTypeEl = document.getElementById('jobType');
+      const cfgListEl = document.getElementById('config-list');
+      const newTypeHTML = '<option value="">เลือกประเภทงาน...</option>' +
         rows.map(r => `<option value="${r[1]}" data-cb="${r[2]}">${r[1]}</option>`).join('');
-      document.getElementById('config-list').innerHTML =
-        rows.map(r => `<div class="flex justify-between bg-gray-50 p-2 rounded-lg"><span>${r[1]} (${r[2]} CB)</span><button onclick="deleteItem('Config','${r[0]}')" class="text-red-400 font-bold">ลบ</button></div>`).join('');
+      // [fix] skip rewrite if dropdown is focused/open — prevents closing an active selection
+      if (document.activeElement !== jobTypeEl)
+        jobTypeEl.innerHTML = newTypeHTML;
+      // config-list: skip if a child element is focused
+      if (!cfgListEl.contains(document.activeElement))
+        cfgListEl.innerHTML = rows.map(r =>
+          `<div class="flex justify-between bg-gray-50 p-2 rounded-lg"><span>${r[1]} (${r[2]} CB)</span><button onclick="deleteItem('Config','${r[0]}')" class="text-red-400 font-bold">ลบ</button></div>`
+        ).join('');
     }
 
     async function loadConfig() {
@@ -971,8 +996,16 @@
       });
       document.getElementById('page-'+t).classList.remove('hidden');
       document.getElementById('tab-'+t).classList.add('active-tab');
-      if (t === 'sprint'  && !sprintData)  fetchSprintView();
-      if (t === 'history')                 renderHistory();
+      if (t === 'sprint' && !sprintData) fetchSprintView();
+      if (t === 'history') {
+        if (!allOrders.length) {
+          // [fix] orders still loading — show spinner, fetchOrders will re-render when done
+          document.getElementById('history-chart').innerHTML = '<div class="text-center py-6"><div class="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500 mx-auto mb-2"></div><p class="text-gray-400 text-sm">กำลังโหลด...</p></div>';
+          document.getElementById('history-list').innerHTML = '';
+        } else {
+          renderHistory();
+        }
+      }
     }
 
     function updateEstCB() {

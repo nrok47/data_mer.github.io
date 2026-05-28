@@ -7,7 +7,11 @@ function doGet(e) {
     if (action === 'getConfig')     return jsonResponse(getTableData('Config'));
     if (action === 'getDashboard')  return jsonResponse(getDashboardData());
     if (action === 'getAllUsers')   return jsonResponse(getTableData('Members'));
-    if (action === 'getSprintView') return jsonResponse(getSprintView(e.parameter.lineId));
+    if (action === 'getSprintView') {
+      // [fix] require lineId for sprint view — return empty result if missing
+      if (!e.parameter.lineId) return jsonResponse({ status: 'error', message: 'lineId required' });
+      return jsonResponse(getSprintView(e.parameter.lineId));
+    }
 
     const lineId = e.parameter.lineId;
     const orders = getTableData('Orders');
@@ -17,7 +21,8 @@ function doGet(e) {
       const filtered = orders.filter((row, i) => i === 0 || row[2] == lineId);
       return jsonResponse(filtered);
     }
-    return jsonResponse(orders);
+    // [fix] no lineId → return empty orders instead of leaking all data
+    return jsonResponse([orders[0]]);
   } catch (err) {
     Logger.log('doGet error: ' + err.toString());
     return jsonResponse({ status: 'error', message: 'An error occurred.' });
@@ -27,6 +32,7 @@ function doGet(e) {
 function doPost(e) {
   const data     = JSON.parse(e.postData.contents);
   const action   = data.action;
+  // [fix] fetch role once and pass it down — action handlers no longer call getUserRole themselves
   const userRole = getUserRole(data.lineId);
 
   if ((action === 'finishOrder' || action === 'deleteOrder') && userRole !== 'Chef' && userRole !== 'Head Chef')
@@ -35,9 +41,9 @@ function doPost(e) {
     return jsonResponse({ status: 'error', message: 'Unauthorized: Head Chef role required' });
 
   if (action === 'submitOrder')    return jsonResponse(submitOrder(data));
-  if (action === 'finishOrder')    return jsonResponse(finishOrder(data));
-  if (action === 'updateOrder')    return jsonResponse(updateOrder(data));
-  if (action === 'assignSprint')   return jsonResponse(assignSprint(data));
+  if (action === 'finishOrder')    return jsonResponse(finishOrder(data, userRole));
+  if (action === 'updateOrder')    return jsonResponse(updateOrder(data, userRole));
+  if (action === 'assignSprint')   return jsonResponse(assignSprint(data, userRole));
   if (action === 'deleteOrder')    return jsonResponse(deleteRowItem(data.tab, data.id, data.lineId, userRole));
   if (action === 'saveConfig')     return jsonResponse(saveConfig(data));
   if (action === 'updateUserRole') return jsonResponse(updateUserRole(data));
@@ -90,8 +96,8 @@ function submitOrder(d) {
   }
 }
 
-function updateOrder(d) {
-  const role   = getUserRole(d.lineId);
+// [fix] role passed in from doPost — no second getUserRole call
+function updateOrder(d, role) {
   const sheet  = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('Orders');
   const data   = sheet.getDataRange().getValues();
   const valid  = ['Pending', 'Doing', 'Done', 'Cancel'];
@@ -103,7 +109,7 @@ function updateOrder(d) {
     if (isNaN(cb) || cb < 0 || cb > 10000) return { status: 'error', message: 'Invalid CB' };
     sheet.getRange(i+1, 6).setValue(String(d.detail  || '').substring(0, 1000));
     sheet.getRange(i+1, 8).setValue(cb);
-    sheet.getRange(i+1, 9).setValue(valid.includes(d.status)                           ? d.status   : data[i][8]);
+    sheet.getRange(i+1, 9).setValue(valid.includes(d.status)                               ? d.status   : data[i][8]);
     sheet.getRange(i+1, 10).setValue(typeof d.priority === 'string' && d.priority.length <= 5 ? d.priority : data[i][9]);
     sheet.getRange(i+1, 12).setValue(d.sprint  !== undefined ? String(d.sprint)  : (data[i][11] || ''));
     sheet.getRange(i+1, 13).setValue(d.dueDate ? new Date(d.dueDate) : (data[i][12] || ''));
@@ -112,8 +118,8 @@ function updateOrder(d) {
   return { status: 'success' };
 }
 
-function assignSprint(d) {
-  const role  = getUserRole(d.lineId);
+// [fix] role passed in from doPost
+function assignSprint(d, role) {
   const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('Orders');
   const data  = sheet.getDataRange().getValues();
   for (let i = 1; i < data.length; i++) {
@@ -126,8 +132,8 @@ function assignSprint(d) {
   return { status: 'success' };
 }
 
-function finishOrder(d) {
-  const role        = getUserRole(d.lineId);
+// [fix] role passed in from doPost
+function finishOrder(d, role) {
   const ss          = SpreadsheetApp.openById(SPREADSHEET_ID);
   const orderSheet  = ss.getSheetByName('Orders');
   const memberSheet = ss.getSheetByName('Members');
@@ -201,7 +207,10 @@ function getSprintView(lineId) {
   return result;
 }
 
+// [fix] whitelist allowed sheets — prevents deleting from Members/Config via client-supplied tab
 function deleteRowItem(tab, id, requestorLineId, requestorRole) {
+  if (!['Orders', 'Config'].includes(tab))
+    return { status: 'error', message: 'Invalid tab' };
   const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(tab);
   const data  = sheet.getDataRange().getValues();
   for (let i = 1; i < data.length; i++) {
