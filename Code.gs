@@ -5,8 +5,16 @@ function doGet(e) {
   try {
     if (action === 'getStats')      return jsonResponse(getUserStats(e.parameter.lineId, e.parameter.name, e.parameter.pictureUrl));
     if (action === 'getConfig')     return jsonResponse(getTableData('Config'));
-    if (action === 'getDashboard')  return jsonResponse(getDashboardData());
-    if (action === 'getAllUsers')   return jsonResponse(getTableData('Members'));
+    if (action === 'getDashboard') {
+      if (!e.parameter.lineId || getUserRole(e.parameter.lineId) !== 'Head Chef')
+        return jsonResponse({ status: 'error', message: 'Unauthorized' });
+      return jsonResponse(getDashboardData());
+    }
+    if (action === 'getAllUsers') {
+      if (!e.parameter.lineId || getUserRole(e.parameter.lineId) !== 'Head Chef')
+        return jsonResponse({ status: 'error', message: 'Unauthorized' });
+      return jsonResponse(getTableData('Members'));
+    }
     if (action === 'getSprintView') {
       // [fix] require lineId for sprint view — return empty result if missing
       if (!e.parameter.lineId) return jsonResponse({ status: 'error', message: 'lineId required' });

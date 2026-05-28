@@ -440,7 +440,7 @@
     async function loadDashboard() {
       showLoadingSpinner('user-experience-list');
       try {
-        const data   = await fetchWithErrorHandling(`${GAS_URL}?action=getDashboard`);
+        const data   = await fetchWithErrorHandling(`${GAS_URL}?action=getDashboard&lineId=${encodeURIComponent(currentUser.userId)}`);
         const ratio  = data.totalCb > 0 ? ((data.doneJobs / data.totalCb) * 100).toFixed(1) : 0;
         document.getElementById('ratio-job-cb').innerText      = ratio;
         document.getElementById('total-finished-cb').innerText = data.totalCb;
@@ -775,7 +775,7 @@
       if (currentUser.role !== 'Head Chef') return;
       showLoadingSpinner('user-list', 'กำลังโหลดรายชื่อผู้ใช้...');
       try {
-        const users = await fetchWithErrorHandling(`${GAS_URL}?action=getAllUsers&_t=${Date.now()}`);
+        const users = await fetchWithErrorHandling(`${GAS_URL}?action=getAllUsers&lineId=${encodeURIComponent(currentUser.userId)}&_t=${Date.now()}`);
         if (!users.length) { document.getElementById('user-list').innerHTML = '<p class="text-gray-400 text-center">ไม่พบผู้ใช้</p>'; return; }
         const looksHeader = typeof users[0][0] !== 'string' || users[0][0] === 'Line_UID' || users[0][1] === 'Display_Name';
         const dataRows    = looksHeader ? users.slice(1) : users;
