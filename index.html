@@ -721,6 +721,7 @@
       const container = document.getElementById('user-list');
       const fallbackPic = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIyMCIgY3k9IjIwIiByPSIyMCIgZmlsbD0iI0YzRjRGNiIvPjwvc3ZnPg==';
       const roleColors = { User: 'bg-gray-100 text-gray-600', Chef: 'bg-blue-100 text-blue-600', 'Head Chef': 'bg-purple-100 text-purple-600' };
+      const safePic = url => (!url || url.includes('line-scdn.net')) ? fallbackPic : url;
       container.innerHTML = `
         <div class="mb-3">
           <input type="text" id="user-search" placeholder="🔍 ค้นหา..." class="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm" oninput="filterUsersList()">
@@ -729,7 +730,7 @@
           ${users.filter(u => u.name && u.name !== 'Display_Name').map(u => `
             <div class="user-item flex items-center justify-between bg-gray-50 p-3 rounded-lg mb-2" data-name="${(u.name||'').toLowerCase()}">
               <div class="flex items-center gap-3">
-                <img src="${u.pictureUrl || fallbackPic}" class="w-10 h-10 rounded-full" onerror="this.src='${fallbackPic}'">
+                <img src="${safePic(u.pictureUrl)}" class="w-10 h-10 rounded-full" onerror="this.src='${fallbackPic}'">
                 <div>
                   <div class="font-medium text-sm">${u.name}</div>
                   <div class="text-xs text-gray-500">CB: ${u.accCb} | BP: ${u.currentBp}</div>
